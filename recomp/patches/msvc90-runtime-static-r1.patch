@@ -1,0 +1,1446 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 20fdc15..8b88251 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -2,6 +2,23 @@
+ 
+ ## Unreleased
+ 
++- Return distinct ANSI/UTF-16 environment blocks and free them through the
++  matching OS service instead of retaining a shared block after successful free.
++
++- Keep OS heap-handle ownership for allocation, reallocation and freeing;
++  destroy private heaps with their remaining allocations and reject foreign frees.
++
++- Implement valid-pointer critical-section spin-count initialization for the
++  existing one-processor guest profile; inspect raw DLL-entry ABI before restoration.
++
++- Add opt-in strict execution failure for missing imports, unknown/interpreted
++  calls and untranslated DLL entries during synthetic CRT experiments.
++
++- Preserve 128-bit SIMD memory operand widths during PE recovery.
++
++- End translated paths at PE-identified Kernel32 ExitProcess/ExitThread IAT
++  calls, preserving independent entries and failing if an exit import returns.
++
+ - Allow native game adapters to place their own cursors at absolute touch
+   positions in logical game pixels. Placement can discard pending DirectInput
+   X/Y movement without losing button, wheel or keyboard input.
+diff --git a/runtime/CMakeLists.txt b/runtime/CMakeLists.txt
+index 10a5e39..8027903 100644
+--- a/runtime/CMakeLists.txt
++++ b/runtime/CMakeLists.txt
+@@ -142,3 +142,19 @@ if(POP_TRACE_DIR AND NOT IOS AND NOT ANDROID)
+   target_compile_options(pop_fixture_trace PRIVATE ${POP_WARN_HOST})
+   pop_optimize(pop_fixture_trace 1)
+ endif()
++
++if(NOT IOS AND NOT ANDROID)
++  add_executable(crt_strict_tests tests/crt_strict_tests.cpp tests/stub_recomp_call.cpp)
++  target_link_libraries(crt_strict_tests PRIVATE recomp_platform recomp_runtime recomp_dx)
++  pop_test_binary(crt_strict_tests)
++  add_test(NAME crt_strict_tests COMMAND crt_strict_tests)
++  set_tests_properties(crt_strict_tests PROPERTIES LABELS nogame TIMEOUT 20)
++endif()
++
++if(NOT IOS AND NOT ANDROID)
++  add_executable(dll_binding_tests tests/dll_binding_tests.cpp tests/stub_recomp_call.cpp)
++  target_link_libraries(dll_binding_tests PRIVATE recomp_platform recomp_runtime_testing recomp_dx)
++  pop_test_binary(dll_binding_tests)
++  add_test(NAME dll_binding_tests COMMAND dll_binding_tests)
++  set_tests_properties(dll_binding_tests PROPERTIES LABELS nogame TIMEOUT 20)
++endif()
+diff --git a/runtime/cpu.cpp b/runtime/cpu.cpp
+index 06d5e2b..319b6c5 100644
+--- a/runtime/cpu.cpp
++++ b/runtime/cpu.cpp
+@@ -198,6 +198,11 @@ void recomp_shim_call(X86 *c, uint32_t target) {
+ // shim. Almost always a translator bug or an uninitialised function pointer,
+ // so it is logged with the target and the guest continues with EAX = 0.
+ void recomp_unknown_call(X86 *c, uint32_t target) {
++    if (recomp_env("STRICT_EXECUTION") && target != GUEST_RETURN_SENTINEL) {
++        fprintf(stderr, "crt.guard.unknown_call target=%08x EIP=%08x ESP=%08x\n", target, c->eip,
++                c->r[R_ESP]);
++        abort();
++    }
+     if (recomp_run_thunk(c, target))
+         return;
+     // Code no translation covers runs in the interpreter when every
+diff --git a/runtime/imports.cpp b/runtime/imports.cpp
+index ec1d2b1..d1e01f1 100644
+--- a/runtime/imports.cpp
++++ b/runtime/imports.cpp
+@@ -5,10 +5,12 @@
+ #include "seh.h"
+ #include "profile.h"
+ #include "mods_seam.h"
++#include "../platform/os.h"
+ 
+ // Defined in kernel32.cpp with the scheduler.
+ void sched_checkpoint();
+ #include "memory.h"
++#include "loader.h"
+ 
+ #include <map>
+ #include <set>
+@@ -414,6 +416,10 @@ bool imports_dispatch(X86 *c, uint32_t target) {
+     if (idx >= tramps().size() || !tramps()[idx].atomic)
+         sched_checkpoint();
+     if (idx >= tramps().size()) {
++        if (recomp_env("STRICT_EXECUTION")) {
++            fprintf(stderr, "crt.guard.unallocated_import %08x\n", target);
++            abort();
++        }
+         // No shim to say how many arguments to drop, but the return address
+         // must still be consumed or the guest stack is displaced from here on.
+         LOGW("imports: call to unallocated trampoline %08x (ESP=%08x, return=%08x)", target,
+@@ -428,6 +434,11 @@ bool imports_dispatch(X86 *c, uint32_t target) {
+     // reference to the element across the call.
+     void (*fn)(X86 *) = tramps()[idx].fn;
+     uint8_t argc = tramps()[idx].argc;
++    if (recomp_env("STRICT_EXECUTION") && (!fn || argc == ARGC_UNKNOWN)) {
++        fprintf(stderr, "crt.guard.unimplemented_import %s argc=%u EIP=%08x ESP=%08x\n",
++                tramps()[idx].desc.c_str(), argc, c->eip, c->r[R_ESP]);
++        abort();
++    }
+     // A guest exception can longjmp across fn(c). Keep no C++ owner live
+     // across that call, and do not retain a pointer into the movable vector.
+     char desc[512];
+@@ -499,6 +510,7 @@ struct Callback {
+     X86 *cpu;
+     jmp_buf env;
+     uint32_t saved_esp, saved_eip, return_sp, profile_depth;
++    uint32_t saved_nonvolatile[4];
+ };
+ struct Callbacks {
+     std::vector<Callback *> stack;
+@@ -549,6 +561,8 @@ uint32_t guest_call(X86 *c, uint32_t fn, const uint32_t *args, int nargs) {
+     call->cpu = c;
+     call->saved_esp = c->r[R_ESP];
+     call->saved_eip = c->eip;
++    for (int i = 0; i < 4; ++i)
++        call->saved_nonvolatile[i] = c->r[i == 0 ? R_EBX : i == 1 ? R_EBP : i == 2 ? R_ESI : R_EDI];
+     call->profile_depth = recomp_profile_depth();
+     uint32_t esp = call->saved_esp;
+     for (int i = nargs - 1; i >= 0; --i) {
+@@ -564,6 +578,19 @@ uint32_t guest_call(X86 *c, uint32_t fn, const uint32_t *args, int nargs) {
+         recomp_run(c, fn);
+     recomp_seh_callback_leave(c, recomp_callback_depth());
+     uint32_t eax = c->r[R_EAX];
++    const LoaderModule *module = loader_module_containing(fn);
++    if (recomp_env("STRICT_EXECUTION") && module && module->entry == fn) {
++        bool preserved = true;
++        for (int i = 0; i < 4; ++i)
++            preserved &= call->saved_nonvolatile[i] == c->r[i == 0   ? R_EBX
++                                                            : i == 1 ? R_EBP
++                                                            : i == 2 ? R_ESI
++                                                                     : R_EDI];
++        fprintf(stderr, "crt.guard.dll_abi entry=%08x raw_esp=%08x expected=%08x nonvolatile=%u\n",
++                fn, c->r[R_ESP], call->saved_esp, preserved);
++        if (c->r[R_ESP] != call->saved_esp || !preserved)
++            abort();
++    }
+     c->r[R_ESP] = call->saved_esp;
+     c->eip = call->saved_eip;
+     callbacks.stack.pop_back();
+diff --git a/runtime/interp.cpp b/runtime/interp.cpp
+index b210e66..fc0882c 100644
+--- a/runtime/interp.cpp
++++ b/runtime/interp.cpp
+@@ -2,6 +2,8 @@
+ #include "interp.h"
+ 
+ #include "thunks.h"
++#include "../platform/os.h"
++#include <cstdlib>
+ 
+ #include <cstdio>
+ #include <memory>
+@@ -819,6 +821,10 @@ void run(X86 *c, const Routine &r) {
+ } // namespace
+ 
+ extern "C" int interp_call(X86 *c, uint32_t target) {
++    if (recomp_env("STRICT_EXECUTION") && target != GUEST_RETURN_SENTINEL) {
++        fprintf(stderr, "crt.guard.interpreter target=%08x EIP=%08x\n", target, c->eip);
++        abort();
++    }
+     g_error[0] = 0;
+     std::shared_ptr<Routine> r = routine_at(target);
+     if (!r)
+diff --git a/runtime/kernel32.cpp b/runtime/kernel32.cpp
+index 529d27d..172508c 100644
+--- a/runtime/kernel32.cpp
++++ b/runtime/kernel32.cpp
+@@ -28,6 +28,7 @@
+ #include <time.h>
+ 
+ #include <map>
++#include <set>
+ #include <chrono>
+ #include <condition_variable>
+ #include <mutex>
+@@ -69,13 +70,21 @@ uint32_t g_last_error = 0;
+ jmp_buf g_exit_jmp;
+ bool g_exit_jmp_valid = false;
+ bool g_exited = false;
++bool g_forced_termination = false;
++std::vector<uint32_t> g_module_attach_order;
++bool g_static_initialized = false;
+ uint32_t g_exit_code = 0;
+ uint32_t g_unhandled_filter = 0;
+ uint32_t g_cmdline_addr = 0;
+-uint32_t g_envblock_addr = 0;
+-uint32_t g_envblockw_addr = 0;
++std::map<uint32_t, bool> g_environment_buffers;
+ bool g_tls_used[TLS_SLOTS] = {false};
+ uint32_t g_process_heap = 0;
++// OS heap handles own arena allocations; the translated CRT still owns its
++// malloc metadata. No host pointer or foreign heap may cross this boundary.
++std::map<uint32_t, std::set<uint32_t>> &heap_ownership() {
++    static std::map<uint32_t, std::set<uint32_t>> owners;
++    return owners;
++}
+ 
+ // ---------------------------------------------------------------------------
+ // Handles
+@@ -537,12 +546,15 @@ void win32_init(const std::string &game_dir) {
+     g_cur_dir = RECOMP_GUEST_ROOT;
+     g_last_error = 0;
+     g_exited = false;
++    g_forced_termination = false;
++    g_module_attach_order.clear();
++    g_static_initialized = false;
+     g_exit_code = 0;
+     g_cmdline_addr = 0;
+-    g_envblock_addr = 0;
+-    g_envblockw_addr = 0;
++    g_environment_buffers.clear();
+     for (uint32_t i = 0; i < TLS_SLOTS; ++i)
+         g_tls_used[i] = false;
++    heap_ownership().clear();
+     handles().clear();
+     modules().clear();
+     vm_regions().clear();
+@@ -630,28 +642,87 @@ uint32_t guest_strdup(const char *s) {
+ // -------------------------------------------------------------------------
+ // Heap / memory
+ // -------------------------------------------------------------------------
++bool heap_flags(uint32_t flags, uint32_t supported) {
++    if (!(flags & ~supported))
++        return true;
++    fprintf(stderr, "crt.guard.unsupported_heap_flags %08x\n", flags);
++    if (recomp_env("STRICT_EXECUTION"))
++        abort();
++    set_last_error(ERROR_CALL_NOT_IMPLEMENTED_);
++    return false;
++}
++bool owned_by_heap(uint32_t h, uint32_t ptr) {
++    auto it = heap_ownership().find(h);
++    return handle_get(h, H_HEAP) && it != heap_ownership().end() && it->second.count(ptr);
++}
+ void k_HeapCreate(X86 *c) {
+-    set_eax(c, handle_new(H_HEAP));
++    if (!heap_flags(arg(c, 0), 1) || arg(c, 2)) {
++        set_last_error(ERROR_CALL_NOT_IMPLEMENTED_);
++        set_eax(c, 0);
++        return;
++    }
++    uint32_t h = handle_new(H_HEAP);
++    heap_ownership()[h];
++    set_eax(c, h);
+ }
+ void k_HeapDestroy(X86 *c) {
+-    handles().erase(arg(c, 0));
++    uint32_t h = arg(c, 0);
++    if (!handle_get(h, H_HEAP) || h == g_process_heap) {
++        set_last_error(ERROR_INVALID_HANDLE_);
++        set_eax(c, 0);
++        return;
++    }
++    auto it = heap_ownership().find(h);
++    if (it != heap_ownership().end()) {
++        for (uint32_t ptr : it->second) {
++            if (!heap_free(ptr)) {
++                fprintf(stderr, "crt.guard.heap_owner_corruption heap=%08x ptr=%08x\n", h, ptr);
++                abort();
++            }
++        }
++        heap_ownership().erase(it);
++    }
++    handles().erase(h);
+     set_eax(c, 1);
+ }
+-
+ void k_HeapAlloc(X86 *c) {
+-    uint32_t flags = arg(c, 1), size = arg(c, 2);
+-    set_eax(c, heap_alloc(size, (flags & 8) != 0));
++    uint32_t h = arg(c, 0), flags = arg(c, 1);
++    if (!handle_get(h, H_HEAP) || !heap_flags(flags, 9)) {
++        set_eax(c, 0);
++        return;
++    }
++    uint32_t ptr = heap_alloc(arg(c, 2), (flags & 8) != 0);
++    if (ptr)
++        heap_ownership()[h].insert(ptr);
++    set_eax(c, ptr);
+ }
+ void k_HeapReAlloc(X86 *c) {
+-    uint32_t flags = arg(c, 1), ptr = arg(c, 2), size = arg(c, 3);
+-    set_eax(c, heap_realloc(ptr, size, (flags & 8) != 0));
++    uint32_t h = arg(c, 0), flags = arg(c, 1), ptr = arg(c, 2);
++    if (!owned_by_heap(h, ptr) || !heap_flags(flags, 9)) {
++        set_eax(c, 0);
++        return;
++    }
++    uint32_t grown = heap_realloc(ptr, arg(c, 3), (flags & 8) != 0);
++    if (grown) {
++        heap_ownership()[h].erase(ptr);
++        heap_ownership()[h].insert(grown);
++    }
++    set_eax(c, grown);
+ }
+ void k_HeapFree(X86 *c) {
+-    set_eax(c, heap_free(arg(c, 2)) ? 1 : 0);
++    uint32_t h = arg(c, 0), ptr = arg(c, 2);
++    if (!owned_by_heap(h, ptr) || !heap_flags(arg(c, 1), 1)) {
++        set_eax(c, 0);
++        return;
++    }
++    bool freed = heap_free(ptr);
++    if (freed)
++        heap_ownership()[h].erase(ptr);
++    set_eax(c, freed ? 1 : 0);
+ }
+ void k_HeapSize(X86 *c) {
+-    uint32_t sz = heap_size(arg(c, 2));
+-    set_eax(c, sz);
++    uint32_t h = arg(c, 0), ptr = arg(c, 2);
++    set_eax(c, owned_by_heap(h, ptr) ? heap_size(ptr) : 0xffffffffu);
+ }
+ 
+ void k_GlobalAlloc(X86 *c) {
+@@ -1135,16 +1206,111 @@ bool runtime_serves_module(const std::string &lower_name) {
+ 
+ // Mapped auxiliary code stays in the arena, but its Win32 lifetime follows
+ // LoadLibrary/FreeLibrary. The main executable never enters this DLL path.
+-uint32_t call_dll_entry(X86 *c, const LoaderModule &m, uint32_t reason) {
++// Diagnostic counters remain observations, never fabricated CRT success.
++void crt_lifetime_snapshot(const char *phase, uint32_t reason) {
++    if (!recomp_env("STRICT_EXECUTION"))
++        return;
++    HeapStats stats = heap_stats();
++    uint32_t owned = 0;
++    for (const auto &owner : heap_ownership())
++        owned += (uint32_t)owner.second.size();
++    uint32_t tls = 0;
++    for (uint32_t i = 0; i < TLS_SLOTS; ++i)
++        if (g_tls_used[i])
++            ++tls;
++    fprintf(
++        stderr,
++        "crt.guard.lifetime phase=%s reason=%u blocks=%u bytes=%llu handles=%zu tls=%u owned=%u\n",
++        phase, reason, stats.used_blocks, (unsigned long long)stats.req_bytes, handles().size(),
++        tls, owned);
++    std::string error = heap_check();
++    if (!error.empty()) {
++        fprintf(stderr, "crt.guard.heap_corruption %s\n", error.c_str());
++        abort();
++    }
++}
++
++uint32_t call_dll_entry(X86 *c, const LoaderModule &m, uint32_t reason, uint32_t reserved = 0) {
++    if (!m.entry)
++        return 1; // PE permits DLLs with no entry point.
++    if (recomp_env("STRICT_EXECUTION") && (!m.entry || recomp_module_lookup(m.entry) < 0)) {
++        fprintf(stderr, "crt.guard.missing_entry %s entry=%08x\n", m.name.c_str(), m.entry);
++        return 0;
++    }
+     if (!m.entry || recomp_module_lookup(m.entry) < 0) {
+         LOGV("%s: DLL entry %08x is not translated, not run", m.name.c_str(), m.entry);
+         return 1;
+     }
+-    uint32_t result = guest_call(c, m.entry, m.base, reason, 0);
++    if (recomp_env("STRICT_EXECUTION"))
++        fprintf(stderr, "crt.guard.dll_entry.begin %s entry=%08x reason=%u\n", m.name.c_str(),
++                m.entry, reason);
++    crt_lifetime_snapshot("before", reason);
++    uint32_t result = guest_call(c, m.entry, m.base, reason, reserved);
++    crt_lifetime_snapshot("after", reason);
++    if (recomp_env("STRICT_EXECUTION"))
++        fprintf(stderr, "crt.guard.dll_entry.end %s reason=%u result=%08x\n", m.name.c_str(),
++                reason, result);
+     LOGV("%s: DLL entry %08x reason %u returned %08x", m.name.c_str(), m.entry, reason, result);
+     return result;
+ }
+ 
++void release_guest_module(X86 *c, LoaderModule &m) {
++    if (!m.load_refs || --m.load_refs)
++        return;
++    call_dll_entry(c, m, 0);
++    m.attached = false;
++    auto deps = std::move(m.acquired_dependencies);
++    m.acquired_dependencies.clear();
++    g_module_attach_order.erase(std::remove(g_module_attach_order.begin(),
++                                            g_module_attach_order.end(), m.base),
++                                g_module_attach_order.end());
++    for (auto i = deps.rbegin(); i != deps.rend(); ++i) {
++        const auto *dep = loader_module_containing(*i);
++        release_guest_module(c, *loader_module_named(dep->name.c_str()));
++    }
++}
++
++bool acquire_guest_module(X86 *c, LoaderModule &m, uint32_t reserved) {
++    if (m.initializing || m.load_refs == 0xffffffffu) {
++        set_last_error(1114);
++        return false;
++    }
++    if (m.attached) {
++        ++m.load_refs;
++        return true;
++    }
++    m.initializing = true;
++    std::vector<uint32_t> acquired;
++    for (const auto &name : m.dependencies) {
++        LoaderModule *dep = loader_module_named(name.c_str());
++        if (!dep || !acquire_guest_module(c, *dep, reserved)) {
++            for (auto i = acquired.rbegin(); i != acquired.rend(); ++i)
++                release_guest_module(c, *loader_module_named(loader_module_containing(*i)->name.c_str()));
++            m.initializing = false;
++            set_last_error(1114);
++            return false;
++        }
++        acquired.push_back(dep->base);
++    }
++    memcpy(g_mem + m.base, m.initial_image.data(), m.initial_image.size());
++    m.attached = true;
++    m.load_refs = 1;
++    if (!call_dll_entry(c, m, 1, reserved)) {
++        call_dll_entry(c, m, 0); // failed load, reserved NULL
++        m.attached = false;
++        m.load_refs = 0;
++        for (auto i = acquired.rbegin(); i != acquired.rend(); ++i)
++            release_guest_module(c, *loader_module_named(loader_module_containing(*i)->name.c_str()));
++        m.initializing = false;
++        set_last_error(1114);
++        return false;
++    }
++    m.acquired_dependencies = std::move(acquired);
++    m.initializing = false;
++    g_module_attach_order.push_back(m.base);
++    return true;
++}
++
+ void load_library_named(X86 *c, const std::string &module_name) {
+     std::string name = library_name(module_name);
+     auto it = modules().find(name);
+@@ -1152,27 +1318,16 @@ void load_library_named(X86 *c, const std::string &module_name) {
+         set_eax(c, it->second);
+         return;
+     }
+-    // Restore post-IAT bytes before each fresh attach, just as remapping the
+-    // original DLL would. Never restore the main image or run its EXE entry.
+     if (LoaderModule *m = loader_module_named(name.c_str())) {
+         if (m->base == loader_image_base()) {
+             set_eax(c, m->base);
+             return;
+         }
+-        if (!m->attached) {
+-            memcpy(g_mem + m->base, m->initial_image.data(), m->initial_image.size());
+-            m->attached = true;
+-            m->load_refs = 1;
+-            if (!call_dll_entry(c, *m, 1)) { // DLL_PROCESS_ATTACH
+-                call_dll_entry(c, *m, 0);    // failed attach still receives detach
+-                m->attached = false;
+-                m->load_refs = 0;
+-                set_last_error(1114); // ERROR_DLL_INIT_FAILED
+-                set_eax(c, 0);
+-                return;
+-            }
+-        } else {
+-            ++m->load_refs;
++        std::vector<uint32_t> order;
++        if (!loader_dependency_order(*m, order) || !acquire_guest_module(c, *m, 0)) {
++            set_last_error(1114);
++            set_eax(c, 0);
++            return;
+         }
+         set_eax(c, m->base);
+         return;
+@@ -1214,10 +1369,12 @@ void k_FreeLibrary(X86 *c) {
+             set_eax(c, 0);
+             return;
+         }
+-        if (--m->load_refs == 0) {
+-            call_dll_entry(c, *m, 0); // DLL_PROCESS_DETACH, before discarding globals
+-            m->attached = false;
++        if (m->initializing) {
++            set_last_error(1114);
++            set_eax(c, 0);
++            return;
+         }
++        release_guest_module(c, *m);
+     }
+     // Shim-only libraries have process lifetime and no guest entry point.
+     set_eax(c, 1);
+@@ -1302,6 +1459,52 @@ void k_GetCommandLineA(X86 *c) {
+     get_command_line(c);
+ }
+ } // namespace
++bool win32_attach_static_modules(X86 *c) {
++    if (g_static_initialized)
++        return true;
++    LoaderModule *main = loader_module_named(RECOMP_EXECUTABLE);
++    if (!main)
++        return true;
++    std::vector<uint32_t> order;
++    if (!loader_dependency_order(*main, order))
++        return false;
++    std::vector<uint32_t> acquired;
++    // A nonnull guest startup marker satisfies the opaque reserved contract.
++    // Do not pass an address from the host's native stack.
++    for (const auto &name : main->dependencies) {
++        LoaderModule *m = loader_module_named(name.c_str());
++        if (!acquire_guest_module(c, *m, TEB_BASE - 0x1000)) {
++            for (auto i = acquired.rbegin(); i != acquired.rend(); ++i)
++                release_guest_module(c, *loader_module_named(loader_module_containing(*i)->name.c_str()));
++            return false;
++        }
++        acquired.push_back(m->base);
++    }
++    g_static_initialized = true;
++    return true;
++}
++
++void win32_detach_process_modules(X86 *c) {
++    // Entries may invoke ExitProcess. Remove each module before entering it,
++    // preventing a second termination pass from detaching it twice.
++    while (!g_module_attach_order.empty()) {
++        uint32_t base = g_module_attach_order.back();
++        g_module_attach_order.pop_back();
++        auto *m = loader_module_named(loader_module_containing(base)->name.c_str());
++        if (!m->attached)
++            continue;
++        m->initializing = true;
++        m->load_refs = 0;
++        m->acquired_dependencies.clear();
++        call_dll_entry(c, *m, 0, TEB_BASE - 0x1000);
++        m->attached = false;
++        m->initializing = false;
++    }
++    g_static_initialized = false;
++}
++
++bool process_forced_termination() { return g_forced_termination; }
++
+ void win32_reset_command_line_for_test() {
+     kernel32_wide_reset_command_line();
+     g_cmdline_addr = 0;
+@@ -1313,43 +1516,52 @@ namespace {
+ static const char *const k_environment[] = {"PATH=" RECOMP_GUEST_ROOT, "windir=C:\\WINDOWS",
+                                             nullptr};
+ 
++// Each request owns a separate OS environment block. It is not CRT heap
++// storage, and FreeEnvironmentStrings must release the matching encoding.
+ void k_GetEnvironmentStrings(X86 *c) {
+-    if (!g_envblock_addr || !heap_owns(g_envblock_addr)) {
+-        uint32_t bytes = 1;
+-        for (int i = 0; k_environment[i]; ++i)
+-            bytes += (uint32_t)strlen(k_environment[i]) + 1;
+-        uint32_t a = heap_alloc(bytes, true);
+-        uint32_t at = a;
+-        for (int i = 0; a && k_environment[i]; ++i)
+-            at += gm_put_str(at, k_environment[i], 0x1000) + 1;
+-        g_envblock_addr = a;
+-    }
+-    set_eax(c, g_envblock_addr);
++    uint32_t bytes = 1;
++    for (int i = 0; k_environment[i]; ++i)
++        bytes += (uint32_t)strlen(k_environment[i]) + 1;
++    uint32_t at = heap_alloc(bytes, true), start = at;
++    for (int i = 0; at && k_environment[i]; ++i)
++        at += gm_put_str(at, k_environment[i], 0x1000) + 1;
++    if (start)
++        g_environment_buffers[start] = false;
++    set_eax(c, start);
+ }
+-
+ void k_GetEnvironmentStringsW(X86 *c) {
+-    if (!g_envblockw_addr || !heap_owns(g_envblockw_addr)) {
+-        uint32_t chars = 1;
+-        for (int i = 0; k_environment[i]; ++i)
+-            chars += (uint32_t)strlen(k_environment[i]) + 1;
+-        uint32_t a = heap_alloc(chars * 2, true);
+-        uint32_t at = a;
+-        for (int i = 0; a && k_environment[i]; ++i) {
+-            const char *s = k_environment[i];
+-            for (uint32_t j = 0; s[j]; ++j) {
+-                wr16(at, (uint16_t)(uint8_t)s[j]);
+-                at += 2;
+-            }
+-            wr16(at, 0);
++    uint32_t chars = 1;
++    for (int i = 0; k_environment[i]; ++i)
++        chars += (uint32_t)strlen(k_environment[i]) + 1;
++    uint32_t at = heap_alloc(chars * 2, true), start = at;
++    for (int i = 0; at && k_environment[i]; ++i) {
++        const char *s = k_environment[i];
++        for (uint32_t j = 0; s[j]; ++j) {
++            wr16(at, (uint16_t)(uint8_t)s[j]);
+             at += 2;
+         }
+-        g_envblockw_addr = a;
++        at += 2;
+     }
+-    set_eax(c, g_envblockw_addr);
++    if (start)
++        g_environment_buffers[start] = true;
++    set_eax(c, start);
+ }
+-
+-void k_FreeEnvironmentStrings(X86 *c) {
+-    set_eax(c, 1);
++void free_environment_strings(X86 *c, bool wide) {
++    auto it = g_environment_buffers.find(arg(c, 0));
++    if (it == g_environment_buffers.end() || it->second != wide) {
++        set_eax(c, 0);
++        return;
++    }
++    bool freed = heap_free(it->first);
++    if (freed)
++        g_environment_buffers.erase(it);
++    set_eax(c, freed ? 1 : 0);
++}
++void k_FreeEnvironmentStringsA(X86 *c) {
++    free_environment_strings(c, false);
++}
++void k_FreeEnvironmentStringsW(X86 *c) {
++    free_environment_strings(c, true);
+ }
+ void k_SetEnvironmentVariableA(X86 *c) {
+     set_eax(c, 1);
+@@ -1728,6 +1940,19 @@ void k_InitializeCriticalSection(X86 *c) {
+     }
+     set_eax(c, 0);
+ }
++// The guest GetSystemInfo profile exposes one processor. Windows ignores
++// dwSpinCount on that profile; retain SpinCount=0 and scheduler ownership.
++// Contract: https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-initializecriticalsectionandspincount
++void k_InitializeCriticalSectionAndSpinCount(X86 *c) {
++    uint32_t p = arg(c, 0);
++    if (p < GUEST_NULL_LIMIT || !gm_valid(p, 24)) {
++        fprintf(stderr, "crt.guard.invalid_critical_section %08x\n", p);
++        abort(); // invalid memory is outside this service's supported contract
++    }
++    k_InitializeCriticalSection(c);
++    set_eax(c, 1);
++}
++
+ void k_EnterCriticalSection(X86 *c) {
+     imports_call_leaves_surfaces();
+     sched_enter_critsec(arg(c, 0));
+@@ -3387,6 +3612,7 @@ void k_ExitProcess(X86 *c) {
+ }
+ 
+ void k_TerminateProcess(X86 *c) {
++    g_forced_termination = true;
+     LOGW("TerminateProcess(%u)", arg(c, 1));
+     if (request_process_exit(arg(c, 1)))
+         return; // never returns
+@@ -3413,6 +3639,14 @@ void k_UnhandledExceptionFilter(X86 *c) {
+ // delivered anywhere. Continuing would run the guest past a point it never
+ // reaches on Windows, so both abort with the state that caused them.
+ } // namespace
++void win32_exit_initialization_failed(X86 *) {
++    g_exit_code = 1114;
++    g_exited = true;
++    if (g_exit_jmp_valid)
++        longjmp(g_exit_jmp, 1);
++    exit(1114);
++}
++
+ 
+ static bool printable_guest_string(uint32_t a, std::string *out) {
+     if (!a || !gm_valid(a, 1))
+@@ -4793,8 +5027,8 @@ const ImportShim g_kernel32_shims[] = {
+     {"KERNEL32.dll", "GetEnvironmentStrings", 0, k_GetEnvironmentStrings},
+     {"KERNEL32.dll", "GetEnvironmentStringsA", 0, k_GetEnvironmentStrings},
+     {"KERNEL32.dll", "GetEnvironmentStringsW", 0, k_GetEnvironmentStringsW},
+-    {"KERNEL32.dll", "FreeEnvironmentStringsA", 1, k_FreeEnvironmentStrings},
+-    {"KERNEL32.dll", "FreeEnvironmentStringsW", 1, k_FreeEnvironmentStrings},
++    {"KERNEL32.dll", "FreeEnvironmentStringsA", 1, k_FreeEnvironmentStringsA},
++    {"KERNEL32.dll", "FreeEnvironmentStringsW", 1, k_FreeEnvironmentStringsW},
+     {"KERNEL32.dll", "SetEnvironmentVariableA", 2, k_SetEnvironmentVariableA},
+     {"KERNEL32.dll", "GetStartupInfoA", 1, k_GetStartupInfoA},
+     {"KERNEL32.dll", "GetSystemInfo", 1, k_GetSystemInfo},
+@@ -4864,6 +5098,8 @@ const ImportShim g_kernel32_shims[] = {
+     {"KERNEL32.dll", "InterlockedDecrement", 1, k_InterlockedDecrement},
+     {"KERNEL32.dll", "InterlockedExchange", 2, k_InterlockedExchange},
+     {"KERNEL32.dll", "InitializeCriticalSection", 1, k_InitializeCriticalSection},
++    {"KERNEL32.dll", "InitializeCriticalSectionAndSpinCount", 2,
++     k_InitializeCriticalSectionAndSpinCount},
+     {"KERNEL32.dll", "EnterCriticalSection", 1, k_EnterCriticalSection},
+     {"KERNEL32.dll", "LeaveCriticalSection", 1, k_LeaveCriticalSection},
+     {"KERNEL32.dll", "DeleteCriticalSection", 1, k_DeleteCriticalSection},
+diff --git a/runtime/loader.cpp b/runtime/loader.cpp
+index 75269f0..5ebbe4b 100644
+--- a/runtime/loader.cpp
++++ b/runtime/loader.cpp
+@@ -22,6 +22,9 @@ __attribute__((weak)) const uint32_t recomp_data_seed_count = 0;
+ #include <string.h>
+ #include <stdlib.h>
+ #include <vector>
++#include <functional>
++#include <map>
++#include <algorithm>
+ #include <string>
+ #include <algorithm>
+ #include "../platform/os.h"
+@@ -214,7 +217,7 @@ bool patch_iat(const std::vector<uint8_t> &file, size_t opt_off, uint16_t opt_ma
+     }
+ 
+     // One descriptor per DLL, bounded by the directory size.
+-    uint32_t max_desc = imp_size / 20 + 1;
++    uint32_t max_desc = imp_size / 20;
+     uint32_t desc_rva = imp_rva;
+     for (uint32_t d = 0; d < max_desc; ++d, desc_rva += 20) {
+         if (!rva_ok(desc_rva, 20)) {
+@@ -226,12 +229,17 @@ bool patch_iat(const std::vector<uint8_t> &file, size_t opt_off, uint16_t opt_ma
+         uint32_t name_rva = rd32(desc + 12);
+         uint32_t first_thunk = rd32(desc + 16);
+         if (!name_rva && !first_thunk && !orig_thunk)
+-            break;
++            return true;
+         if (!rva_ok(name_rva, 1) || !rva_ok(first_thunk, 4)) {
+             g_error = "import descriptor points outside the image";
+             return false;
+         }
+-        std::string dll = gm_str(g_base + name_rva, 260);
++        uint32_t dll_limit = std::min(260u, g_size - name_rva);
++        std::string dll = gm_str(g_base + name_rva, dll_limit);
++        if (dll.empty() || dll.size() == dll_limit) {
++            g_error = "import DLL name is empty or unterminated";
++            return false;
++        }
+ 
+         uint32_t lookup_rva = orig_thunk ? orig_thunk : first_thunk;
+         uint32_t slot_rva = first_thunk;
+@@ -253,13 +261,26 @@ bool patch_iat(const std::vector<uint8_t> &file, size_t opt_off, uint16_t opt_ma
+                     g_error = "import name lies outside the image";
+                     return false;
+                 }
+-                std::string n = gm_str(g_base + t + 2, 260);
++                uint32_t name_limit = std::min(260u, g_size - t - 2);
++                std::string n = gm_str(g_base + t + 2, name_limit);
++                if (n.empty() || n.size() == name_limit) {
++                    g_error = "import symbol name is empty or unterminated";
++                    return false;
++                }
+                 snprintf(namebuf, sizeof namebuf, "%s", n.c_str());
+             }
+             // DLLs can import code AND data from the executable. Both slots
+             // must hold the original guest address, not a host trampoline or
+             // a separately allocated copy of an exported global.
+             if (const LoaderModule *module = loader_module_named(dll.c_str())) {
++                LoaderModule *owner = loader_module_named(
++                    loader_module_containing(g_base)->name.c_str());
++                if (module->base != loader_image_base() && module->base != owner->base &&
++                    std::find(owner->dependencies.begin(), owner->dependencies.end(), module->name) ==
++                        owner->dependencies.end())
++                    owner->dependencies.push_back(module->name);
++                if (module->base == owner->base && module->base != loader_image_base())
++                    owner->dependencies.push_back(module->name); // rejected as a cycle
+                 uint32_t address = (t & 0x80000000u)
+                                        ? loader_module_export_ordinal(*module, t & 0xffff)
+                                        : loader_module_export(*module, namebuf);
+@@ -289,7 +310,8 @@ bool patch_iat(const std::vector<uint8_t> &file, size_t opt_off, uint16_t opt_ma
+             ++g_iat_patched;
+         }
+     }
+-    return true;
++    g_error = "unterminated import descriptor array";
++    return false;
+ }
+ 
+ // --------------------------------------------------------------------------
+@@ -304,6 +326,12 @@ struct AuxSpec {
+ };
+ const AuxSpec g_aux_specs[] = RECOMP_AUX_MODULES;
+ std::vector<LoaderModule> g_aux;
++struct PendingBinding {
++    std::vector<uint8_t> file;
++    size_t opt_off;
++    uint16_t opt_magic;
++};
++std::vector<PendingBinding> g_pending_bindings;
+ 
+ bool load_aux_module(const AuxSpec &spec) {
+     LoaderModule m;
+@@ -394,8 +422,10 @@ bool load_aux_module(const AuxSpec &spec) {
+         g_error = std::string(spec.name) + ": export directory lies outside the image";
+         return false;
+     }
+-    if (rd<uint32_t>(file, opt_off + 92) > 9 && rd<uint32_t>(file, opt_off + 96 + 9 * 8))
+-        LOGW("%s has a TLS directory, which auxiliary modules do not get", spec.name);
++    if (rd<uint32_t>(file, opt_off + 92) > 9 && rd<uint32_t>(file, opt_off + 96 + 9 * 8)) {
++        g_error = std::string(spec.name) + ": auxiliary static TLS is unsupported";
++        return false;
++    }
+ 
+     size_t hdr_copy = size_hdrs < file.size() ? size_hdrs : file.size();
+     memcpy(g_mem + image_base, file.data(), hdr_copy);
+@@ -424,12 +454,8 @@ bool load_aux_module(const AuxSpec &spec) {
+             memcpy(g_mem + va, file.data() + raw_ptr, copy);
+         }
+     }
+-    if (!patch_iat(file, opt_off, opt_magic, image_base, size_image)) {
+-        g_error = std::string(spec.name) + ": " + g_error;
+-        return false;
+-    }
+-    m.initial_image.assign(g_mem + image_base, g_mem + image_base + m.size);
+     g_aux.push_back(m);
++    g_pending_bindings.push_back({std::move(file), opt_off, opt_magic});
+     LOGV("mapped auxiliary module %s: base %08x size %08x entry %08x", spec.name, m.base,
+          size_image, m.entry);
+     return true;
+@@ -550,6 +576,7 @@ bool loader_load(const char *exe_path) {
+     g_error.clear();
+     g_sections.clear();
+     g_aux.clear();
++    g_pending_bindings.clear();
+     g_main = LoaderModule{};
+     g_iat_patched = 0;
+     g_iat_data = 0;
+@@ -749,11 +776,25 @@ bool loader_load(const char *exe_path) {
+         }
+     }
+ 
+-    if (!patch_iat(file, opt_off, opt_magic, g_base, g_size))
+-        return false;
++    // Publish every verified mapping/export table before binding any IAT.
+     for (uint32_t i = 0; i < RECOMP_AUX_MODULE_COUNT; ++i)
+         if (!load_aux_module(g_aux_specs[i]))
+             return false;
++    if (!patch_iat(file, opt_off, opt_magic, g_base, g_size))
++        return false;
++    for (size_t i = 0; i < g_aux.size(); ++i) {
++        auto &m = g_aux[i];
++        const auto &pending = g_pending_bindings[i];
++        if (!patch_iat(pending.file, pending.opt_off, pending.opt_magic, m.base, m.size)) {
++            g_error = m.name + ": " + g_error;
++            return false;
++        }
++        m.initial_image.assign(g_mem + m.base, g_mem + m.base + m.size);
++    }
++    g_pending_bindings.clear();
++    std::vector<uint32_t> order;
++    if (!loader_dependency_order(g_main, order))
++        return false;
+ 
+     if (g_entry != LOADER_EXPECTED_ENTRY)
+         LOGW("entry point is %08x, expected %08x", g_entry, LOADER_EXPECTED_ENTRY);
+@@ -829,6 +870,8 @@ void run_entry(X86 *c) {
+     sched_set_guest_thread(true);
+     // ExitProcess/TerminateProcess/ExitThread-outside-a-thread longjmp here.
+     if (setjmp(*process_exit_jmp()) == 0) {
++        if (!win32_attach_static_modules(c))
++            win32_exit_initialization_failed(c);
+         uint32_t count = 0;
+         for (uint32_t p = g_tls.callbacks; p && rva_ok(p - g_base, 4); p += 4) {
+             uint32_t cb = rd32(p);
+@@ -853,9 +896,50 @@ void run_entry(X86 *c) {
+         recomp_run(c, g_entry);
+     } else
+         LOGW("guest process exited with code %u", process_exit_code());
++    if (!process_forced_termination())
++        win32_detach_process_modules(c);
+     sched_set_guest_thread(false);
+ }
+ 
+ void run_entry() {
+     run_entry(&g_ctx);
+ }
++
++bool loader_dependency_order(const LoaderModule &root, std::vector<uint32_t> &order) {
++    order.clear();
++    std::map<uint32_t, unsigned> marks;
++    std::function<bool(const LoaderModule &)> visit = [&](const LoaderModule &m) {
++        if (marks[m.base] == 1) {
++            g_error = "unsupported cyclic DLL dependency at " + m.name;
++            return false;
++        }
++        if (marks[m.base] == 2)
++            return true;
++        marks[m.base] = 1;
++        for (const auto &name : m.dependencies) {
++            const LoaderModule *dep = loader_module_named(name.c_str());
++            if (!dep) {
++                g_error = "missing mapped dependency " + name;
++                return false;
++            }
++            if (!visit(*dep))
++                return false;
++        }
++        marks[m.base] = 2;
++        if (m.base != loader_image_base())
++            order.push_back(m.base);
++        return true;
++    };
++    return visit(root);
++}
++#ifdef POPM_TESTING
++void loader_test_modules(const LoaderModule &main, const std::vector<LoaderModule> &aux) {
++    g_main = main;
++    g_base = main.base;
++    g_size = main.size;
++    g_aux = aux;
++}
++bool loader_test_bind(const std::vector<uint8_t> &file, uint32_t base, uint32_t size) {
++    return patch_iat(file, 0, 0x10b, base, size);
++}
++#endif
+diff --git a/runtime/loader.h b/runtime/loader.h
+index bfe336c..24c1770 100644
+--- a/runtime/loader.h
++++ b/runtime/loader.h
+@@ -50,6 +50,9 @@ struct LoaderModule {
+     uint32_t base = 0, size = 0, entry = 0, export_rva = 0, export_size = 0;
+     bool attached = false;
+     uint32_t load_refs = 0;
++    bool initializing = false;
++    std::vector<std::string> dependencies;
++    std::vector<uint32_t> acquired_dependencies;
+     std::vector<uint8_t> initial_image;
+     std::vector<SectionInfo> sections;
+ };
+@@ -91,3 +94,11 @@ X86 *loader_context();
+ // Calls the PE entry point through recomp_call using loader_context().
+ void run_entry();
+ void run_entry(X86 *c);
++
++// Validate the configured guest dependency closure before running any entries.
++// Cyclic guest DLL graphs are explicitly unsupported by this loader slice.
++bool loader_dependency_order(const LoaderModule &root, std::vector<uint32_t> &order);
++#ifdef POPM_TESTING
++void loader_test_modules(const LoaderModule &main, const std::vector<LoaderModule> &aux);
++bool loader_test_bind(const std::vector<uint8_t> &file, uint32_t base, uint32_t size);
++#endif
+diff --git a/runtime/tests/crt_strict_tests.cpp b/runtime/tests/crt_strict_tests.cpp
+new file mode 100644
+index 0000000..0ca2d2e
+--- /dev/null
++++ b/runtime/tests/crt_strict_tests.cpp
+@@ -0,0 +1,156 @@
++// Synthetic guards: no PE or original DLL is needed.
++#include "../imports.h"
++#include "../interp.h"
++#include "../loader.h"
++#include "../memory.h"
++#include "../win32.h"
++#include "../../platform/os.h"
++#include <cstdio>
++#include <cstring>
++
++static uint32_t invoke(X86 *c, const char *name, uint32_t a, uint32_t b = 0, uint32_t d = 0,
++                       uint32_t e = 0) {
++    c->r[R_ESP] = 0x0efff000;
++    wr32(c->r[R_ESP], GUEST_RETURN_SENTINEL);
++    wr32(c->r[R_ESP] + 4, a);
++    wr32(c->r[R_ESP] + 8, b);
++    wr32(c->r[R_ESP] + 12, d);
++    wr32(c->r[R_ESP] + 16, e);
++    uint32_t t = imports_resolve("KERNEL32.dll", name);
++    if (!t || !imports_dispatch(c, t))
++        return 0xffffffffu;
++    return c->r[R_EAX];
++}
++static void answer(X86 *c) {
++    c->r[R_EAX] = 42;
++}
++int main(int argc, char **argv) {
++    os_setenv("RECOMP_STRICT_EXECUTION", "1");
++    if (argc > 1) {
++        mem_init();
++        imports_init();
++        win32_init(".");
++        X86 c{};
++        loader_init_context(&c);
++        if (!strcmp(argv[1], "missing"))
++            imports_dispatch(&c, imports_alloc_trampoline("SYNTH.dll", "missing", nullptr, 0));
++        if (!strcmp(argv[1], "signature"))
++            imports_dispatch(
++                &c, imports_alloc_trampoline("SYNTH.dll", "signature", answer, ARGC_UNKNOWN));
++        if (!strcmp(argv[1], "unknown"))
++            recomp_unknown_call(&c, 0x00401000);
++        if (!strcmp(argv[1], "interp"))
++            interp_call(&c, 0x00401000);
++        if (!strcmp(argv[1], "critical")) {
++            uint32_t at = 0x02001000;
++            wr32(at - 4, 0x12345678);
++            wr32(at + 24, 0x87654321);
++            if (invoke(&c, "InitializeCriticalSectionAndSpinCount", at, 4000) != 1 ||
++                c.r[R_ESP] != 0x0efff00c)
++                return 5;
++            if (rd32(at + 4) != 0xffffffffu || rd32(at + 8) || rd32(at + 12) || rd32(at + 20))
++                return 6;
++            invoke(&c, "EnterCriticalSection", at);
++            invoke(&c, "EnterCriticalSection", at);
++            if (rd32(at + 8) != 2 || !rd32(at + 12))
++                return 7;
++            invoke(&c, "LeaveCriticalSection", at);
++            invoke(&c, "LeaveCriticalSection", at);
++            if (rd32(at + 8) || rd32(at + 12))
++                return 8;
++            invoke(&c, "DeleteCriticalSection", at);
++            if (rd32(at - 4) != 0x12345678 || rd32(at + 24) != 0x87654321)
++                return 9;
++            mem_shutdown();
++            return 0;
++        }
++        if (!strcmp(argv[1], "heaps")) {
++            HeapStats baseline = heap_stats();
++            uint32_t h1 = invoke(&c, "HeapCreate", 0, 4096, 0),
++                     h2 = invoke(&c, "HeapCreate", 0, 4096, 0);
++            if (!h1 || !h2 || h1 == h2)
++                return 10;
++            uint32_t p1 = invoke(&c, "HeapAlloc", h1, 8, 32),
++                     p2 = invoke(&c, "HeapAlloc", h2, 0, 64);
++            if (!p1 || !p2 || rd32(p1))
++                return 11;
++            wr32(p1, 0x12345678);
++            if (invoke(&c, "HeapFree", h2, 0, p1) || !heap_owns(p1))
++                return 12;
++            if (invoke(&c, "HeapSize", h2, 0, p1) != 0xffffffffu)
++                return 13;
++            if (invoke(&c, "HeapReAlloc", h1, 0, p1, 0xffffffffu) || rd32(p1) != 0x12345678 ||
++                !heap_owns(p1))
++                return 14;
++            uint32_t grown = invoke(&c, "HeapReAlloc", h1, 8, p1, 1024);
++            if (!grown || rd32(grown) != 0x12345678 || rd32(grown + 32))
++                return 15;
++            if (invoke(&c, "HeapSize", h1, 0, grown) != 1024)
++                return 16;
++            if (!invoke(&c, "HeapDestroy", h1) || heap_owns(grown) || !heap_owns(p2))
++                return 17;
++            if (invoke(&c, "HeapAlloc", h1, 0, 32) || invoke(&c, "HeapDestroy", h1))
++                return 18;
++            if (!invoke(&c, "HeapFree", h2, 0, p2) || !invoke(&c, "HeapDestroy", h2))
++                return 19;
++            uint32_t process = invoke(&c, "GetProcessHeap", 0);
++            if (invoke(&c, "HeapDestroy", process))
++                return 20;
++            if (heap_stats().used_blocks != baseline.used_blocks || !heap_check().empty())
++                return 21;
++            mem_shutdown();
++            return 0;
++        }
++        if (!strcmp(argv[1], "environment")) {
++            HeapStats baseline = heap_stats();
++            uint32_t a = invoke(&c, "GetEnvironmentStringsA", 0),
++                     b = invoke(&c, "GetEnvironmentStringsA", 0),
++                     w = invoke(&c, "GetEnvironmentStringsW", 0);
++            if (!a || !b || !w || a == b || a == w || b == w)
++                return 22;
++            if (!g_mem[a] || rd16(w) != (uint16_t)g_mem[a])
++                return 23;
++            if (invoke(&c, "FreeEnvironmentStringsW", a) || !heap_owns(a))
++                return 24;
++            if (!invoke(&c, "FreeEnvironmentStringsA", a) || heap_owns(a))
++                return 25;
++            if (invoke(&c, "FreeEnvironmentStringsA", a))
++                return 26;
++            if (!invoke(&c, "FreeEnvironmentStringsA", b) ||
++                !invoke(&c, "FreeEnvironmentStringsW", w))
++                return 27;
++            if (heap_stats().used_blocks != baseline.used_blocks || !heap_check().empty())
++                return 28;
++            mem_shutdown();
++            return 0;
++        }
++        if (!strcmp(argv[1], "valid")) {
++            uint32_t before = c.r[R_ESP];
++            uint32_t t = imports_alloc_trampoline("SYNTH.dll", "valid", answer, 0);
++            if (!imports_dispatch(&c, t) || c.r[R_EAX] != 42 || c.r[R_ESP] != before + 4)
++                return 2;
++            mem_shutdown();
++            return 0;
++        }
++        return 3;
++    }
++    char exe[4096];
++    if (os_exe_path(exe, sizeof exe))
++        return 4;
++    for (const char *name : {"missing", "signature", "unknown", "interp", "valid", "critical",
++                             "heaps", "environment"}) {
++        const char *args[] = {exe, name, nullptr};
++        int64_t pid = 0;
++        int code = -1;
++        if (os_spawn(args, &pid) || os_wait(pid, &code) ||
++            code != ((!strcmp(name, "valid") || !strcmp(name, "critical") ||
++                      !strcmp(name, "heaps") || !strcmp(name, "environment"))
++                         ? 0
++                         : 134)) {
++            fprintf(stderr, "strict guard %s failed, exit=%d\n", name, code);
++            return 1;
++        }
++    }
++    puts("crt_strict_tests: 8 subprocess cases passed");
++    return 0;
++}
+diff --git a/runtime/tests/dll_binding_tests.cpp b/runtime/tests/dll_binding_tests.cpp
+new file mode 100644
+index 0000000..70acd2a
+--- /dev/null
++++ b/runtime/tests/dll_binding_tests.cpp
+@@ -0,0 +1,145 @@
++// Synthetic PE import/export storage and translated entry callbacks only.
++#include "../imports.h"
++#include "../loader.h"
++#include "../memory.h"
++#include "../win32.h"
++#include "../../platform/os.h"
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <vector>
++static int failures;
++#define CHECK(x) do { if (!(x)) { fprintf(stderr,"line %d: %s\n",__LINE__,#x); ++failures; } } while (0)
++static std::vector<uint32_t> events, reserved_values;
++static uint32_t fail_base;
++static void entry(X86 *c) {
++    uint32_t base = arg(c,0), reason = arg(c,1);
++    events.push_back(base | reason);
++    reserved_values.push_back(arg(c,2));
++    c->r[R_EAX] = reason == 1 && base == fail_base ? 0 : 1;
++    c->eip = rd32(c->r[R_ESP]);
++    c->r[R_ESP] += 16;
++    recomp_return(c);
++}
++static uint32_t invoke(X86 *c, const char *name, uint32_t arg0) {
++    uint32_t esp=c->r[R_ESP];
++    wr32(esp-8,GUEST_RETURN_SENTINEL); wr32(esp-4,arg0);
++    c->r[R_ESP]=esp-8;
++    CHECK(imports_dispatch(c,imports_resolve("KERNEL32.dll",name)));
++    CHECK(c->r[R_ESP]==esp);
++    return c->r[R_EAX];
++}
++static LoaderModule make(const char *name,uint32_t base) {
++    LoaderModule m; m.name=name; m.base=base; m.size=0x1000; m.entry=base+0x800;
++    m.export_rva=0x100;m.export_size=0x100;
++    memset(g_mem+base,0,m.size);
++    wr32(base+0x110,7);wr32(base+0x114,2);wr32(base+0x118,2);
++    wr32(base+0x11c,0x200);wr32(base+0x120,0x220);wr32(base+0x124,0x230);
++    wr32(base+0x200,0x800);wr32(base+0x204,0x900);
++    wr32(base+0x220,0x300);wr32(base+0x224,0x310);
++    wr16(base+0x230,0);wr16(base+0x232,1);
++    gm_put_str(base+0x300,"Code",16);gm_put_str(base+0x310,"Data",16);
++    m.initial_image.assign(g_mem+base,g_mem+base+m.size);return m;
++}
++int main() {
++    os_setenv("RECOMP_STRICT_EXECUTION","1");
++    mem_init(); imports_init(); win32_init(".");
++    constexpr uint32_t a=0x01000000,b=0x01100000,d=0x01200000;
++    static const uint32_t addresses[]={a+0x800,b+0x800,d+0x800};
++    static void (*const functions[])(X86*)={entry,entry,entry};
++    static RecompHookFn hooks[3]{};static uint8_t hooked[3]{};
++    static const RecompModule translated={"synthetic-dlls",a,d+0x1000,addresses,3,functions,hooks,hooked,nullptr,0,nullptr};
++    recomp_module_register(&translated);
++    LoaderModule main=make(RECOMP_EXECUTABLE,0x00400000);main.attached=true;
++    LoaderModule ma=make("A.dll",a),mb=make("B.dll",b),md=make("D.dll",d);
++    ma.dependencies={"B.dll","D.dll"};md.dependencies={"B.dll"};main.dependencies={"A.dll"};
++    loader_test_modules(main,{ma,md,mb}); // deliberately reverse dependency order
++    X86 c;loader_init_context(&c);uint32_t esp=c.r[R_ESP];
++    std::vector<uint32_t> order;
++    CHECK(loader_dependency_order(*loader_module_named(RECOMP_EXECUTABLE),order));
++    CHECK((order==std::vector<uint32_t>{b,d,a}));
++    CHECK(win32_attach_static_modules(&c));
++    CHECK((events==std::vector<uint32_t>{b|1,d|1,a|1}));
++    CHECK(loader_module_named("B.dll")->load_refs==2);
++    CHECK(win32_attach_static_modules(&c) && events.size()==3 &&
++          loader_module_named("B.dll")->load_refs==2);
++    CHECK(c.r[R_ESP]==esp);
++    for(auto value:reserved_values)CHECK(value!=0 && value<GUEST_SIZE);
++    gm_put_str(0x00300000,"A.dll",16);
++    CHECK(invoke(&c,"LoadLibraryA",0x00300000)==a);
++    CHECK(events.size()==3 && loader_module_named("A.dll")->load_refs==2);
++    CHECK(invoke(&c,"FreeLibrary",a)==1 && events.size()==3);
++    win32_detach_process_modules(&c);
++    CHECK((events==std::vector<uint32_t>{b|1,d|1,a|1,a,d,b}));
++    for(auto value:reserved_values)CHECK(value!=0);
++    win32_detach_process_modules(&c);CHECK(events.size()==6);
++    CHECK(!loader_module_named("B.dll")->load_refs);
++    // Dynamic dependency acquisition and reverse release use NULL reserved.
++    events.clear();reserved_values.clear();
++    CHECK(invoke(&c,"LoadLibraryA",0x00300000)==a);
++    CHECK(invoke(&c,"FreeLibrary",a)==1);
++    CHECK((events==std::vector<uint32_t>{b|1,d|1,a|1,a,d,b}));
++    for(auto value:reserved_values)CHECK(value==0);
++    // A failing top-level entry unwinds the shared dependency closure once.
++    events.clear();reserved_values.clear();fail_base=a;
++    CHECK(invoke(&c,"LoadLibraryA",0x00300000)==0);
++    CHECK((events==std::vector<uint32_t>{b|1,d|1,a|1,a,d,b}));
++    CHECK(!loader_module_named("B.dll")->load_refs && !loader_module_named("A.dll")->attached);
++    // Failure of a nested dependency unwinds earlier acquisitions.
++    events.clear();reserved_values.clear();fail_base=d;
++    loader_test_modules(main,{ma,md,mb});
++    CHECK(!win32_attach_static_modules(&c));
++    CHECK((events==std::vector<uint32_t>{b|1,d|1,d,b}));
++    CHECK(!loader_module_named("B.dll")->attached);
++    // Roll back an earlier successful EXE root if a later root fails.
++    events.clear();reserved_values.clear();fail_base=a;
++    LoaderModule two_roots=main;two_roots.dependencies={"B.dll","A.dll"};
++    loader_test_modules(two_roots,{ma,md,mb});
++    CHECK(!win32_attach_static_modules(&c));
++    CHECK((events==std::vector<uint32_t>{b|1,d|1,a|1,a,d,b}));
++    CHECK(!loader_module_named("B.dll")->load_refs);
++    // A failed load must retain another caller's preexisting B reference.
++    loader_test_modules(main,{ma,md,mb});events.clear();fail_base=0;
++    gm_put_str(0x00300000,"B.dll",16);CHECK(invoke(&c,"LoadLibraryA",0x00300000)==b);
++    events.clear();fail_base=a;gm_put_str(0x00300000,"A.dll",16);
++    CHECK(invoke(&c,"LoadLibraryA",0x00300000)==0);
++    CHECK((events==std::vector<uint32_t>{d|1,a|1,a,d}));
++    CHECK(loader_module_named("B.dll")->load_refs==1 && loader_module_named("B.dll")->attached);
++    CHECK(invoke(&c,"FreeLibrary",b)==1);
++    fail_base=0;events.clear();
++    loader_module_named("B.dll")->dependencies={"A.dll"};
++    CHECK(!win32_attach_static_modules(&c) && events.empty());
++    CHECK(strstr(loader_error(),"cyclic")!=nullptr);
++    loader_module_named("B.dll")->dependencies={"MISSING.dll"};
++    CHECK(!loader_dependency_order(*loader_module_named("A.dll"),order));
++    // Bind code by name and data by ordinal into a caller after all modules
++    // have been published. No shim/trampoline or copied data is acceptable.
++    main.dependencies.clear();loader_test_modules(main,{ma,md,mb});
++    std::vector<uint8_t> file(128);uint32_t imp=0x400,impsize=40;
++    memcpy(file.data()+104,&imp,4);memcpy(file.data()+108,&impsize,4);
++    uint32_t base=main.base;memset(g_mem+base+0x400,0,0x300);
++    wr32(base+0x400,0x500);wr32(base+0x40c,0x480);wr32(base+0x410,0x540);
++    gm_put_str(base+0x480,"B.dll",16);wr32(base+0x500,0x580);wr32(base+0x504,0x80000008);
++    gm_put_str(base+0x582,"Code",16);
++    CHECK(loader_test_bind(file,base,main.size));
++    CHECK(rd32(base+0x540)==b+0x800 && rd32(base+0x544)==b+0x900);
++    wr32(rd32(base+0x544),0x12345678);CHECK(rd32(b+0x900)==0x12345678);
++    CHECK(loader_module_named(RECOMP_EXECUTABLE)->dependencies==std::vector<std::string>{"B.dll"});
++    gm_put_str(base+0x582,"NoSuchExport",32);
++    CHECK(!loader_test_bind(file,base,main.size));
++    CHECK(strstr(loader_error(),"missing mapped export")!=nullptr);
++    // A missing terminator in the declared descriptor directory is rejected.
++    uint32_t short_size=20;memcpy(file.data()+108,&short_size,4);
++    gm_put_str(base+0x582,"Code",16);
++    CHECK(!loader_test_bind(file,base,main.size));
++    CHECK(strstr(loader_error(),"unterminated import descriptor")!=nullptr);
++    memcpy(file.data()+108,&impsize,4);
++    wr32(base+0x40c,main.size-2);memset(g_mem+base+main.size-2,'x',2);
++    CHECK(!loader_test_bind(file,base,main.size));
++    CHECK(strstr(loader_error(),"unterminated")!=nullptr);
++    // Entry-less DLLs need no fabricated translated entry to be loadable.
++    auto *empty=loader_module_named("B.dll");empty->entry=0;empty->dependencies.clear();
++    gm_put_str(0x00300000,"B.dll",16);CHECK(invoke(&c,"LoadLibraryA",0x00300000)==b);
++    CHECK(invoke(&c,"FreeLibrary",b)==1);
++    printf("dll_binding_tests: %d failures\n",failures);return failures?1:0;
++}
+diff --git a/runtime/win32.h b/runtime/win32.h
+index b59ecac..3596ba9 100644
+--- a/runtime/win32.h
++++ b/runtime/win32.h
+@@ -559,3 +559,10 @@ const std::vector<UnknownCall> &recomp_unknown_calls();
+ jmp_buf *process_exit_jmp();
+ bool process_exited();
+ uint32_t process_exit_code();
++
++// Auxiliary guest DLL lifetime. Reserved values passed to guest entries are
++// arena addresses (or zero), never host pointers.
++bool win32_attach_static_modules(X86 *c);
++void win32_detach_process_modules(X86 *c);
++void win32_exit_initialization_failed(X86 *c);
++bool process_forced_termination();
+diff --git a/tools/recomp/tests/test_translate_imports.py b/tools/recomp/tests/test_translate_imports.py
+index e212c1d..7d147b8 100644
+--- a/tools/recomp/tests/test_translate_imports.py
++++ b/tools/recomp/tests/test_translate_imports.py
+@@ -82,3 +82,40 @@ def test_a_function_that_ends_in_raiseexception_does_not_return(tmp_path):
+         % (THROW, THROW + 1, THROW + 3, IAT_SLOT, THROW + 9, THROW + 10))
+     parsed = [T.Function(CALLER, "caller", 5, caller), T.Function(THROW, "throw", 13, throw)]
+     assert THROW in T.noreturn_callees_from(parsed, image.iat_names, image)
++
++
++def test_only_kernel32_exit_imports_are_terminal(tmp_path):
++    for name, dll, terminal in ((b"ExitProcess", b"KERNEL32.dll", True),
++                                (b"ExitThread", b"KERNEL32.dll", True),
++                                (b"TerminateProcess", b"KERNEL32.dll", False),
++                                (b"RaiseException", b"KERNEL32.dll", False),
++                                (b"ExitProcess", b"SOMELIBX.dll", False)):
++        path = tmp_path / "exit.exe"
++        minimal_pe(path)
++        data = bytearray(path.read_bytes())
++        data[0x460:0x480] = (b"\0\0" + name + b"\0").ljust(32, b"\0")
++        data[0x480:0x48d] = dll + b"\0"
++        data[0x200:0x207] = b"\xff\x15" + struct.pack("<I", IAT_SLOT) + b"\xcc"
++        path.write_bytes(data)
++        image = T.Image(str(path))
++        assert (IAT_SLOT in image.noreturn_iat_slots) is terminal
++        if terminal:
++            insns = image.recover(CALLER, set())
++            assert len(insns) == 1 and insns[0].mnem == "CALL"
++
++
++
++def test_recovered_simd_memory_width_uses_existing_listing_grammar(tmp_path):
++    path = tmp_path / "simd.exe"
++    minimal_pe(path)
++    data = bytearray(path.read_bytes())
++    # MOVAPD XMM1,[absolute]; RET. The decoder must not lose a real export
++    # because its memory operand is 16 bytes rather than a scalar width.
++    code = b"\x66\x0f\x28\x0d" + struct.pack("<I", BASE + IDATA) + b"\xc3"
++    data[0x200:0x200 + len(code)] = code
++    path.write_bytes(data)
++    image = T.Image(str(path))
++    recovered = image.recover(CALLER, set())
++    assert [i.mnem for i in recovered] == ["MOVAPD", "RET"]
++    operand = T.parse_operand(recovered[0].ops[1])
++    assert operand.kind == "mem" and operand.size == 128
+diff --git a/tools/recomp/tests/test_translate_noreturn.py b/tools/recomp/tests/test_translate_noreturn.py
+index f569db1..b22c3dd 100644
+--- a/tools/recomp/tests/test_translate_noreturn.py
++++ b/tools/recomp/tests/test_translate_noreturn.py
+@@ -70,3 +70,46 @@ def test_a_popped_jump_goes_only_to_pushed_continuations():
+     text = translate(listing)
+     assert "L_0040110e:" in text
+     assert "00401117" not in text
++
++
++IAT = 0x00402040
++
++
++def iat_translation(listing, entries=(), terminal=True):
++    image = NoImage()
++    image.noreturn_iat_slots = {IAT} if terminal else set()
++    image.insn_end = lambda addr, mnem: addr + 6 if mnem == "CALL" else None
++    tr = T.Translator(image, {FN}, Opts())
++    fn = T.Function(FN, "exit_test", 0x40, T.parse_listing_text(listing))
++    fn.measure(image)
++    tr.prepare(fn)
++    return tr, fn, "\n".join(tr.translate(fn, entries))
++
++
++def test_exit_iat_ends_body_and_fails_if_import_returns():
++    tr, fn, text = iat_translation("00401100  CALL dword ptr [0x402040]\n")
++    assert tr.successors(fn, 0) == []
++    assert "recomp_call(c, t_);" in text
++    assert "recomp_unknown_call(c, 0x401106u); return;" in text
++    assert "recomp_jump" not in text
++    assert tr.stats["_fallthrough_exit"] == 0
++
++
++def test_exit_iat_does_not_delete_independent_branch_or_entry():
++    listing = ("00401100  TEST EAX,EAX\n00401102  JZ 0x401110\n"
++               "00401104  CALL dword ptr [0x402040]\n"
++               "0040110a  MOV EAX,0xbad\n"
++               "00401110  MOV EAX,0x123\n00401115  RET\n")
++    _, _, text = iat_translation(listing)
++    assert "0xbadu" not in text
++    assert "0x123u" in text
++    _, _, text = iat_translation(listing, entries=(0x40110a,))
++    assert "0xbadu" in text
++
++
++def test_ordinary_and_computed_import_calls_still_return():
++    for operand in ("dword ptr [0x402044]", "dword ptr [EAX]", "EAX"):
++        tr, fn, text = iat_translation("00401100  CALL %s\n00401106  RET\n" % operand)
++        assert tr.successors(fn, 0) == [1]
++        assert "recomp_unknown_call" not in text
++        assert "recomp_return" in text
+diff --git a/tools/recomp/translate.py b/tools/recomp/translate.py
+index 944f2ca..4d5feb9 100644
+--- a/tools/recomp/translate.py
++++ b/tools/recomp/translate.py
+@@ -818,6 +818,17 @@ def flag_effect(insn):
+ 
+ # ------------------------------------------------------------------- image --
+ 
++def noreturn_iat_operand(image, operand):
++    """Only a literal PE-verified Kernel32 exit IAT slot proves this call terminal.
++
++    Register calls, indexed memory and unrelated DLLs with the same export name
++    remain ordinary calls. A returning/rebound exit import fails explicitly in
++    emitted code instead of continuing through the bytes after the call.
++    """
++    match = re.fullmatch(r"dword ptr \[(0x[0-9a-fA-F]+)\]", operand.strip())
++    return bool(match and int(match.group(1), 16) in getattr(image, "noreturn_iat_slots", ()))
++
++
+ class Image(object):
+     def __init__(self, path):
+         import pefile
+@@ -840,13 +851,20 @@ class Image(object):
+         #: so that what a compiler put after a throw, such as a switch table,
+         #: is not decoded as code.
+         self.iat_names = {}
++        self.noreturn_iat_slots = set()
+         try:
+             pe.parse_data_directories(directories=[
+                 pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_IMPORT"]])
+             for entry in getattr(pe, "DIRECTORY_ENTRY_IMPORT", []):
+                 for imp in entry.imports:
+                     if imp.name:
+-                        self.iat_names[imp.address] = imp.name.decode("ascii", "replace")
++                        name = imp.name.decode("ascii", "replace")
++                        self.iat_names[imp.address] = name
++                        # These two Kernel32 APIs cannot return normally. Do not
++                        # extend this to TerminateProcess (failure returns), or
++                        # resumable RaiseException, based on their names alone.
++                        if entry.dll.lower() == b"kernel32.dll" and name in ("ExitProcess", "ExitThread"):
++                            self.noreturn_iat_slots.add(imp.address)
+         except Exception:                 # a malformed table only loses names
+             pass
+         pe.close()
+@@ -1344,7 +1362,7 @@ class Image(object):
+         if mnem.startswith("F") and mnem not in self.X87_INT:
+             return {4: "float", 8: "double", 10: "extended double"}.get(nbytes)
+         return {1: "byte", 2: "word", 4: "dword", 8: "qword",
+-                10: "extended double"}.get(nbytes)
++                10: "extended double", 16: "xmmword"}.get(nbytes)
+ 
+     def _op_text(self, ci, op, mnem):
+         import capstone.x86_const as X
+@@ -1475,6 +1493,8 @@ class Image(object):
+                 if (ci.mnemonic == "call" and ci.op_str.startswith("0x")
+                         and int(ci.op_str, 16) in self.noreturn_callees):
+                     break
++                if ci.mnemonic == "call" and noreturn_iat_operand(self, ci.op_str):
++                    break
+                 va = nxt
+             else:
+                 truncated = True
+@@ -1792,11 +1812,12 @@ class Translator(object):
+                 break
+ 
+     def never_returns(self, ins):
+-        """Is `ins` a direct CALL to a callee the listings show never returning?"""
++        """Direct proven callee, or PE-identified Kernel32 exit IAT call."""
+         if ins.mnem != "CALL":
+             return False
+         t = self.branch_target(ins)
+-        return t is not None and t in self.noreturn_callees
++        return ((t is not None and t in self.noreturn_callees)
++                or bool(ins.ops and noreturn_iat_operand(self.image, ins.ops[0])))
+ 
+     @staticmethod
+     def closed_noreturn_loop(fn):
+@@ -2011,6 +2032,8 @@ class Translator(object):
+         if t is not None and t not in fn.pushed_continuations:
+             return [fn.index[t]] if t in fn.index else []
+         nxt = i + 1 if (i + 1 < len(fn.insns) and fn.contiguous[i]) else None
++        if self.never_returns(ins):
++            return []
+         if m == "INT3":
+             # MSVC pads between functions with INT3, and a listing cut at a
+             # call that never returns runs that padding into the next
+@@ -3214,6 +3237,9 @@ class Translator(object):
+             if RESUMABLE_STACKS:
+                 L.append("if (c->eip != %s) return;" % hexlit(nxt))
+             self.stats["_call_indirect"] += 1
++            if self.never_returns(ins):
++                self.stats["_noreturn_trap"] += 1
++                L.append("recomp_unknown_call(c, %s); return;" % hexlit(nxt))
+             return L
+ 
+         if m == "RET":

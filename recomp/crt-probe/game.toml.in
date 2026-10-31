@@ -1,0 +1,55 @@
+# Synthetic experiment only. Rendered configuration and binaries stay ignored.
+[game]
+id = "blur-crt-probe"
+name = "MSVCR90 ownership feasibility probe"
+app_name = "BlurCrtProbe"
+bundle_id = "dev.blurnative.crtprobe"
+executable = "crt-probe.exe"
+sha256 = "@EXE_SHA256@"
+image_base = 0x00400000
+entry_point = @EXE_ENTRY@
+guest_root = 'C:\CrtProbe'
+developer_exe = "original/crt-probe.exe"
+windows_version = "6.1"
+heap_base = 0x02000000
+guest_size = 0x10100000
+
+[modules.aux.msvcr90]
+name = "msvcr90.dll"
+path = "original/msvcr90.dll"
+sha256 = "@DLL_SHA256@"
+base = 0x10000000
+size = 0xa9000
+listings = "analysis/msvcr90.dll"
+function_alignment = 4
+entry_points = [0x1000d140]
+
+[translate]
+listings = "analysis/crt-probe.exe"
+globals = "globals.toml"
+animation_counter = 0
+volatile_reads = []
+entry_points = []
+function_alignment = 1
+
+[hooks]
+frame_clock_begin = 0xffffffff
+frame_clock_wait = 0xffffffff
+frame_clock_wait_clamp = 0xffffffff
+frame_clock_clamp_deadline = 0
+frame_clock_wait_deadline = 0
+cursor_surface_ptrs = []
+mouse_vtable = 0
+mouse_device_ptr = 0
+mouse_device_right = 0
+camera = 0
+
+[mods]
+builtin = "none"
+
+[controls]
+default_layout = "hidden"
+pad = "off"
+
+[bundle]
+exclude = []

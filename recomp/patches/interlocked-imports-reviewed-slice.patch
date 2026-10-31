@@ -1,0 +1,94 @@
+# Focused recomp-kit delta: KERNEL32 interlocked exchange-add and compare-exchange.
+#
+# Apply from the kit root after the earlier startup slices:
+#   cd local/recomp-kit-static-binding && patch -p1 < ../../recomp/patches/interlocked-imports-reviewed-slice.patch
+#
+# Reached evidence: strict run aborted with
+#   crt.guard.unimplemented_import KERNEL32.dll!InterlockedExchangeAdd argc=254 EIP=00554376
+# after boot.pak completed and the integrated Bink path started. The pinned image
+# imports InterlockedIncrement, InterlockedDecrement, InterlockedExchange,
+# InterlockedExchangeAdd and InterlockedCompareExchange; the first three already
+# had shims. These two complete the set with old-value returns and are covered by
+# the crt_strict_tests "interlocked" subprocess case (11 cases total).
+#
+# This patch is a provenance artifact, not a claim of whole-atomic-model parity.
+# The host relink and a post-relink startup probe remain pending.
+
+--- a/runtime/kernel32.cpp
++++ b/runtime/kernel32.cpp
+@@ -1998,6 +1998,28 @@
+     uint32_t p = arg(c, 0), v = arg(c, 1);
+     uint32_t old = rd32(p);
+     wr32(p, v);
++    set_eax(c, old);
++}
++// Complete the KERNEL32 interlocked set the pinned image imports. The runtime
++// runs guest threads cooperatively, so the read and the write below cannot
++// interleave with another guest thread; no yield is possible between them. The
++// return value is the pre-operation contents.
++// Contract: https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-interlockedexchangeadd
++void k_InterlockedExchangeAdd(X86 *c) {
++    uint32_t p = arg(c, 0), v = arg(c, 1);
++    uint32_t old = rd32(p);
++    wr32(p, old + v);
++    set_eax(c, old);
++}
++// (Destination, Exchange, Comparand): store Exchange only when the old value
++// equals Comparand, and always return the old value. Test/DEC on the returned
++// value is the guest's usual "did the exchange happen" answer.
++// Contract: https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-interlockedcompareexchange
++void k_InterlockedCompareExchange(X86 *c) {
++    uint32_t p = arg(c, 0), exchange = arg(c, 1), comparand = arg(c, 2);
++    uint32_t old = rd32(p);
++    if (old == comparand)
++        wr32(p, exchange);
+     set_eax(c, old);
+ }
+ 
+@@ -5294,6 +5316,8 @@
+     {"KERNEL32.dll", "InterlockedIncrement", 1, k_InterlockedIncrement},
+     {"KERNEL32.dll", "InterlockedDecrement", 1, k_InterlockedDecrement},
+     {"KERNEL32.dll", "InterlockedExchange", 2, k_InterlockedExchange},
++    {"KERNEL32.dll", "InterlockedExchangeAdd", 2, k_InterlockedExchangeAdd},
++    {"KERNEL32.dll", "InterlockedCompareExchange", 3, k_InterlockedCompareExchange},
+     {"KERNEL32.dll", "InitializeCriticalSection", 1, k_InitializeCriticalSection},
+     {"KERNEL32.dll", "InitializeCriticalSectionAndSpinCount", 2,
+      k_InitializeCriticalSectionAndSpinCount},
+--- a/runtime/tests/crt_strict_tests.cpp
++++ b/runtime/tests/crt_strict_tests.cpp
+@@ -258,6 +258,27 @@
+             mem_shutdown();
+             return 0;
+         }
++        if (!strcmp(argv[1], "interlocked")) {
++            uint32_t at = 0x02001000;
++            wr32(at, 10);
++            if (invoke_all(&c, "InterlockedExchangeAdd", {at, 5}) != 10 || rd32(at) != 15)
++                return 38;
++            wr32(at, 0xffffffffu);
++            if (invoke_all(&c, "InterlockedExchangeAdd", {at, 2}) != 0xffffffffu || rd32(at) != 1)
++                return 39;
++            wr32(at, 0x7fffffffu);
++            if (invoke_all(&c, "InterlockedExchangeAdd", {at, 1}) != 0x7fffffffu ||
++                rd32(at) != 0x80000000u)
++                return 40;
++            wr32(at, 7);
++            if (invoke_all(&c, "InterlockedCompareExchange", {at, 9, 7}) != 7 || rd32(at) != 9)
++                return 41;
++            wr32(at, 7);
++            if (invoke_all(&c, "InterlockedCompareExchange", {at, 9, 8}) != 7 || rd32(at) != 7)
++                return 42;
++            mem_shutdown();
++            return 0;
++        }
+         if (!strcmp(argv[1], "valid")) {
+             uint32_t before = c.r[R_ESP];
+             uint32_t t = imports_alloc_trampoline("SYNTH.dll", "valid", answer, 0);
+@@ -288,6 +309,6 @@
+             return 1;
+         }
+     }
+-    puts("crt_strict_tests: 10 subprocess cases passed");
++    puts("crt_strict_tests: 11 subprocess cases passed");
+     return 0;
+ }

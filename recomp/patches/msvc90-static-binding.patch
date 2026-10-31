@@ -1,0 +1,658 @@
+diff --git a/runtime/CMakeLists.txt b/runtime/CMakeLists.txt
+index 99c1664..8027903 100644
+--- a/runtime/CMakeLists.txt
++++ b/runtime/CMakeLists.txt
+@@ -150,3 +150,11 @@ if(NOT IOS AND NOT ANDROID)
+   add_test(NAME crt_strict_tests COMMAND crt_strict_tests)
+   set_tests_properties(crt_strict_tests PROPERTIES LABELS nogame TIMEOUT 20)
+ endif()
++
++if(NOT IOS AND NOT ANDROID)
++  add_executable(dll_binding_tests tests/dll_binding_tests.cpp tests/stub_recomp_call.cpp)
++  target_link_libraries(dll_binding_tests PRIVATE recomp_platform recomp_runtime_testing recomp_dx)
++  pop_test_binary(dll_binding_tests)
++  add_test(NAME dll_binding_tests COMMAND dll_binding_tests)
++  set_tests_properties(dll_binding_tests PROPERTIES LABELS nogame TIMEOUT 20)
++endif()
+diff --git a/runtime/kernel32.cpp b/runtime/kernel32.cpp
+index 646af60..172508c 100644
+--- a/runtime/kernel32.cpp
++++ b/runtime/kernel32.cpp
+@@ -70,6 +70,9 @@ uint32_t g_last_error = 0;
+ jmp_buf g_exit_jmp;
+ bool g_exit_jmp_valid = false;
+ bool g_exited = false;
++bool g_forced_termination = false;
++std::vector<uint32_t> g_module_attach_order;
++bool g_static_initialized = false;
+ uint32_t g_exit_code = 0;
+ uint32_t g_unhandled_filter = 0;
+ uint32_t g_cmdline_addr = 0;
+@@ -543,6 +546,9 @@ void win32_init(const std::string &game_dir) {
+     g_cur_dir = RECOMP_GUEST_ROOT;
+     g_last_error = 0;
+     g_exited = false;
++    g_forced_termination = false;
++    g_module_attach_order.clear();
++    g_static_initialized = false;
+     g_exit_code = 0;
+     g_cmdline_addr = 0;
+     g_environment_buffers.clear();
+@@ -1224,7 +1230,9 @@ void crt_lifetime_snapshot(const char *phase, uint32_t reason) {
+     }
+ }
+ 
+-uint32_t call_dll_entry(X86 *c, const LoaderModule &m, uint32_t reason) {
++uint32_t call_dll_entry(X86 *c, const LoaderModule &m, uint32_t reason, uint32_t reserved = 0) {
++    if (!m.entry)
++        return 1; // PE permits DLLs with no entry point.
+     if (recomp_env("STRICT_EXECUTION") && (!m.entry || recomp_module_lookup(m.entry) < 0)) {
+         fprintf(stderr, "crt.guard.missing_entry %s entry=%08x\n", m.name.c_str(), m.entry);
+         return 0;
+@@ -1237,7 +1245,7 @@ uint32_t call_dll_entry(X86 *c, const LoaderModule &m, uint32_t reason) {
+         fprintf(stderr, "crt.guard.dll_entry.begin %s entry=%08x reason=%u\n", m.name.c_str(),
+                 m.entry, reason);
+     crt_lifetime_snapshot("before", reason);
+-    uint32_t result = guest_call(c, m.entry, m.base, reason, 0);
++    uint32_t result = guest_call(c, m.entry, m.base, reason, reserved);
+     crt_lifetime_snapshot("after", reason);
+     if (recomp_env("STRICT_EXECUTION"))
+         fprintf(stderr, "crt.guard.dll_entry.end %s reason=%u result=%08x\n", m.name.c_str(),
+@@ -1246,6 +1254,63 @@ uint32_t call_dll_entry(X86 *c, const LoaderModule &m, uint32_t reason) {
+     return result;
+ }
+ 
++void release_guest_module(X86 *c, LoaderModule &m) {
++    if (!m.load_refs || --m.load_refs)
++        return;
++    call_dll_entry(c, m, 0);
++    m.attached = false;
++    auto deps = std::move(m.acquired_dependencies);
++    m.acquired_dependencies.clear();
++    g_module_attach_order.erase(std::remove(g_module_attach_order.begin(),
++                                            g_module_attach_order.end(), m.base),
++                                g_module_attach_order.end());
++    for (auto i = deps.rbegin(); i != deps.rend(); ++i) {
++        const auto *dep = loader_module_containing(*i);
++        release_guest_module(c, *loader_module_named(dep->name.c_str()));
++    }
++}
++
++bool acquire_guest_module(X86 *c, LoaderModule &m, uint32_t reserved) {
++    if (m.initializing || m.load_refs == 0xffffffffu) {
++        set_last_error(1114);
++        return false;
++    }
++    if (m.attached) {
++        ++m.load_refs;
++        return true;
++    }
++    m.initializing = true;
++    std::vector<uint32_t> acquired;
++    for (const auto &name : m.dependencies) {
++        LoaderModule *dep = loader_module_named(name.c_str());
++        if (!dep || !acquire_guest_module(c, *dep, reserved)) {
++            for (auto i = acquired.rbegin(); i != acquired.rend(); ++i)
++                release_guest_module(c, *loader_module_named(loader_module_containing(*i)->name.c_str()));
++            m.initializing = false;
++            set_last_error(1114);
++            return false;
++        }
++        acquired.push_back(dep->base);
++    }
++    memcpy(g_mem + m.base, m.initial_image.data(), m.initial_image.size());
++    m.attached = true;
++    m.load_refs = 1;
++    if (!call_dll_entry(c, m, 1, reserved)) {
++        call_dll_entry(c, m, 0); // failed load, reserved NULL
++        m.attached = false;
++        m.load_refs = 0;
++        for (auto i = acquired.rbegin(); i != acquired.rend(); ++i)
++            release_guest_module(c, *loader_module_named(loader_module_containing(*i)->name.c_str()));
++        m.initializing = false;
++        set_last_error(1114);
++        return false;
++    }
++    m.acquired_dependencies = std::move(acquired);
++    m.initializing = false;
++    g_module_attach_order.push_back(m.base);
++    return true;
++}
++
+ void load_library_named(X86 *c, const std::string &module_name) {
+     std::string name = library_name(module_name);
+     auto it = modules().find(name);
+@@ -1253,27 +1318,16 @@ void load_library_named(X86 *c, const std::string &module_name) {
+         set_eax(c, it->second);
+         return;
+     }
+-    // Restore post-IAT bytes before each fresh attach, just as remapping the
+-    // original DLL would. Never restore the main image or run its EXE entry.
+     if (LoaderModule *m = loader_module_named(name.c_str())) {
+         if (m->base == loader_image_base()) {
+             set_eax(c, m->base);
+             return;
+         }
+-        if (!m->attached) {
+-            memcpy(g_mem + m->base, m->initial_image.data(), m->initial_image.size());
+-            m->attached = true;
+-            m->load_refs = 1;
+-            if (!call_dll_entry(c, *m, 1)) { // DLL_PROCESS_ATTACH
+-                call_dll_entry(c, *m, 0);    // failed attach still receives detach
+-                m->attached = false;
+-                m->load_refs = 0;
+-                set_last_error(1114); // ERROR_DLL_INIT_FAILED
+-                set_eax(c, 0);
+-                return;
+-            }
+-        } else {
+-            ++m->load_refs;
++        std::vector<uint32_t> order;
++        if (!loader_dependency_order(*m, order) || !acquire_guest_module(c, *m, 0)) {
++            set_last_error(1114);
++            set_eax(c, 0);
++            return;
+         }
+         set_eax(c, m->base);
+         return;
+@@ -1315,10 +1369,12 @@ void k_FreeLibrary(X86 *c) {
+             set_eax(c, 0);
+             return;
+         }
+-        if (--m->load_refs == 0) {
+-            call_dll_entry(c, *m, 0); // DLL_PROCESS_DETACH, before discarding globals
+-            m->attached = false;
++        if (m->initializing) {
++            set_last_error(1114);
++            set_eax(c, 0);
++            return;
+         }
++        release_guest_module(c, *m);
+     }
+     // Shim-only libraries have process lifetime and no guest entry point.
+     set_eax(c, 1);
+@@ -1403,6 +1459,52 @@ void k_GetCommandLineA(X86 *c) {
+     get_command_line(c);
+ }
+ } // namespace
++bool win32_attach_static_modules(X86 *c) {
++    if (g_static_initialized)
++        return true;
++    LoaderModule *main = loader_module_named(RECOMP_EXECUTABLE);
++    if (!main)
++        return true;
++    std::vector<uint32_t> order;
++    if (!loader_dependency_order(*main, order))
++        return false;
++    std::vector<uint32_t> acquired;
++    // A nonnull guest startup marker satisfies the opaque reserved contract.
++    // Do not pass an address from the host's native stack.
++    for (const auto &name : main->dependencies) {
++        LoaderModule *m = loader_module_named(name.c_str());
++        if (!acquire_guest_module(c, *m, TEB_BASE - 0x1000)) {
++            for (auto i = acquired.rbegin(); i != acquired.rend(); ++i)
++                release_guest_module(c, *loader_module_named(loader_module_containing(*i)->name.c_str()));
++            return false;
++        }
++        acquired.push_back(m->base);
++    }
++    g_static_initialized = true;
++    return true;
++}
++
++void win32_detach_process_modules(X86 *c) {
++    // Entries may invoke ExitProcess. Remove each module before entering it,
++    // preventing a second termination pass from detaching it twice.
++    while (!g_module_attach_order.empty()) {
++        uint32_t base = g_module_attach_order.back();
++        g_module_attach_order.pop_back();
++        auto *m = loader_module_named(loader_module_containing(base)->name.c_str());
++        if (!m->attached)
++            continue;
++        m->initializing = true;
++        m->load_refs = 0;
++        m->acquired_dependencies.clear();
++        call_dll_entry(c, *m, 0, TEB_BASE - 0x1000);
++        m->attached = false;
++        m->initializing = false;
++    }
++    g_static_initialized = false;
++}
++
++bool process_forced_termination() { return g_forced_termination; }
++
+ void win32_reset_command_line_for_test() {
+     kernel32_wide_reset_command_line();
+     g_cmdline_addr = 0;
+@@ -3510,6 +3612,7 @@ void k_ExitProcess(X86 *c) {
+ }
+ 
+ void k_TerminateProcess(X86 *c) {
++    g_forced_termination = true;
+     LOGW("TerminateProcess(%u)", arg(c, 1));
+     if (request_process_exit(arg(c, 1)))
+         return; // never returns
+@@ -3536,6 +3639,14 @@ void k_UnhandledExceptionFilter(X86 *c) {
+ // delivered anywhere. Continuing would run the guest past a point it never
+ // reaches on Windows, so both abort with the state that caused them.
+ } // namespace
++void win32_exit_initialization_failed(X86 *) {
++    g_exit_code = 1114;
++    g_exited = true;
++    if (g_exit_jmp_valid)
++        longjmp(g_exit_jmp, 1);
++    exit(1114);
++}
++
+ 
+ static bool printable_guest_string(uint32_t a, std::string *out) {
+     if (!a || !gm_valid(a, 1))
+diff --git a/runtime/loader.cpp b/runtime/loader.cpp
+index 75269f0..5ebbe4b 100644
+--- a/runtime/loader.cpp
++++ b/runtime/loader.cpp
+@@ -22,6 +22,9 @@ __attribute__((weak)) const uint32_t recomp_data_seed_count = 0;
+ #include <string.h>
+ #include <stdlib.h>
+ #include <vector>
++#include <functional>
++#include <map>
++#include <algorithm>
+ #include <string>
+ #include <algorithm>
+ #include "../platform/os.h"
+@@ -214,7 +217,7 @@ bool patch_iat(const std::vector<uint8_t> &file, size_t opt_off, uint16_t opt_ma
+     }
+ 
+     // One descriptor per DLL, bounded by the directory size.
+-    uint32_t max_desc = imp_size / 20 + 1;
++    uint32_t max_desc = imp_size / 20;
+     uint32_t desc_rva = imp_rva;
+     for (uint32_t d = 0; d < max_desc; ++d, desc_rva += 20) {
+         if (!rva_ok(desc_rva, 20)) {
+@@ -226,12 +229,17 @@ bool patch_iat(const std::vector<uint8_t> &file, size_t opt_off, uint16_t opt_ma
+         uint32_t name_rva = rd32(desc + 12);
+         uint32_t first_thunk = rd32(desc + 16);
+         if (!name_rva && !first_thunk && !orig_thunk)
+-            break;
++            return true;
+         if (!rva_ok(name_rva, 1) || !rva_ok(first_thunk, 4)) {
+             g_error = "import descriptor points outside the image";
+             return false;
+         }
+-        std::string dll = gm_str(g_base + name_rva, 260);
++        uint32_t dll_limit = std::min(260u, g_size - name_rva);
++        std::string dll = gm_str(g_base + name_rva, dll_limit);
++        if (dll.empty() || dll.size() == dll_limit) {
++            g_error = "import DLL name is empty or unterminated";
++            return false;
++        }
+ 
+         uint32_t lookup_rva = orig_thunk ? orig_thunk : first_thunk;
+         uint32_t slot_rva = first_thunk;
+@@ -253,13 +261,26 @@ bool patch_iat(const std::vector<uint8_t> &file, size_t opt_off, uint16_t opt_ma
+                     g_error = "import name lies outside the image";
+                     return false;
+                 }
+-                std::string n = gm_str(g_base + t + 2, 260);
++                uint32_t name_limit = std::min(260u, g_size - t - 2);
++                std::string n = gm_str(g_base + t + 2, name_limit);
++                if (n.empty() || n.size() == name_limit) {
++                    g_error = "import symbol name is empty or unterminated";
++                    return false;
++                }
+                 snprintf(namebuf, sizeof namebuf, "%s", n.c_str());
+             }
+             // DLLs can import code AND data from the executable. Both slots
+             // must hold the original guest address, not a host trampoline or
+             // a separately allocated copy of an exported global.
+             if (const LoaderModule *module = loader_module_named(dll.c_str())) {
++                LoaderModule *owner = loader_module_named(
++                    loader_module_containing(g_base)->name.c_str());
++                if (module->base != loader_image_base() && module->base != owner->base &&
++                    std::find(owner->dependencies.begin(), owner->dependencies.end(), module->name) ==
++                        owner->dependencies.end())
++                    owner->dependencies.push_back(module->name);
++                if (module->base == owner->base && module->base != loader_image_base())
++                    owner->dependencies.push_back(module->name); // rejected as a cycle
+                 uint32_t address = (t & 0x80000000u)
+                                        ? loader_module_export_ordinal(*module, t & 0xffff)
+                                        : loader_module_export(*module, namebuf);
+@@ -289,7 +310,8 @@ bool patch_iat(const std::vector<uint8_t> &file, size_t opt_off, uint16_t opt_ma
+             ++g_iat_patched;
+         }
+     }
+-    return true;
++    g_error = "unterminated import descriptor array";
++    return false;
+ }
+ 
+ // --------------------------------------------------------------------------
+@@ -304,6 +326,12 @@ struct AuxSpec {
+ };
+ const AuxSpec g_aux_specs[] = RECOMP_AUX_MODULES;
+ std::vector<LoaderModule> g_aux;
++struct PendingBinding {
++    std::vector<uint8_t> file;
++    size_t opt_off;
++    uint16_t opt_magic;
++};
++std::vector<PendingBinding> g_pending_bindings;
+ 
+ bool load_aux_module(const AuxSpec &spec) {
+     LoaderModule m;
+@@ -394,8 +422,10 @@ bool load_aux_module(const AuxSpec &spec) {
+         g_error = std::string(spec.name) + ": export directory lies outside the image";
+         return false;
+     }
+-    if (rd<uint32_t>(file, opt_off + 92) > 9 && rd<uint32_t>(file, opt_off + 96 + 9 * 8))
+-        LOGW("%s has a TLS directory, which auxiliary modules do not get", spec.name);
++    if (rd<uint32_t>(file, opt_off + 92) > 9 && rd<uint32_t>(file, opt_off + 96 + 9 * 8)) {
++        g_error = std::string(spec.name) + ": auxiliary static TLS is unsupported";
++        return false;
++    }
+ 
+     size_t hdr_copy = size_hdrs < file.size() ? size_hdrs : file.size();
+     memcpy(g_mem + image_base, file.data(), hdr_copy);
+@@ -424,12 +454,8 @@ bool load_aux_module(const AuxSpec &spec) {
+             memcpy(g_mem + va, file.data() + raw_ptr, copy);
+         }
+     }
+-    if (!patch_iat(file, opt_off, opt_magic, image_base, size_image)) {
+-        g_error = std::string(spec.name) + ": " + g_error;
+-        return false;
+-    }
+-    m.initial_image.assign(g_mem + image_base, g_mem + image_base + m.size);
+     g_aux.push_back(m);
++    g_pending_bindings.push_back({std::move(file), opt_off, opt_magic});
+     LOGV("mapped auxiliary module %s: base %08x size %08x entry %08x", spec.name, m.base,
+          size_image, m.entry);
+     return true;
+@@ -550,6 +576,7 @@ bool loader_load(const char *exe_path) {
+     g_error.clear();
+     g_sections.clear();
+     g_aux.clear();
++    g_pending_bindings.clear();
+     g_main = LoaderModule{};
+     g_iat_patched = 0;
+     g_iat_data = 0;
+@@ -749,11 +776,25 @@ bool loader_load(const char *exe_path) {
+         }
+     }
+ 
+-    if (!patch_iat(file, opt_off, opt_magic, g_base, g_size))
+-        return false;
++    // Publish every verified mapping/export table before binding any IAT.
+     for (uint32_t i = 0; i < RECOMP_AUX_MODULE_COUNT; ++i)
+         if (!load_aux_module(g_aux_specs[i]))
+             return false;
++    if (!patch_iat(file, opt_off, opt_magic, g_base, g_size))
++        return false;
++    for (size_t i = 0; i < g_aux.size(); ++i) {
++        auto &m = g_aux[i];
++        const auto &pending = g_pending_bindings[i];
++        if (!patch_iat(pending.file, pending.opt_off, pending.opt_magic, m.base, m.size)) {
++            g_error = m.name + ": " + g_error;
++            return false;
++        }
++        m.initial_image.assign(g_mem + m.base, g_mem + m.base + m.size);
++    }
++    g_pending_bindings.clear();
++    std::vector<uint32_t> order;
++    if (!loader_dependency_order(g_main, order))
++        return false;
+ 
+     if (g_entry != LOADER_EXPECTED_ENTRY)
+         LOGW("entry point is %08x, expected %08x", g_entry, LOADER_EXPECTED_ENTRY);
+@@ -829,6 +870,8 @@ void run_entry(X86 *c) {
+     sched_set_guest_thread(true);
+     // ExitProcess/TerminateProcess/ExitThread-outside-a-thread longjmp here.
+     if (setjmp(*process_exit_jmp()) == 0) {
++        if (!win32_attach_static_modules(c))
++            win32_exit_initialization_failed(c);
+         uint32_t count = 0;
+         for (uint32_t p = g_tls.callbacks; p && rva_ok(p - g_base, 4); p += 4) {
+             uint32_t cb = rd32(p);
+@@ -853,9 +896,50 @@ void run_entry(X86 *c) {
+         recomp_run(c, g_entry);
+     } else
+         LOGW("guest process exited with code %u", process_exit_code());
++    if (!process_forced_termination())
++        win32_detach_process_modules(c);
+     sched_set_guest_thread(false);
+ }
+ 
+ void run_entry() {
+     run_entry(&g_ctx);
+ }
++
++bool loader_dependency_order(const LoaderModule &root, std::vector<uint32_t> &order) {
++    order.clear();
++    std::map<uint32_t, unsigned> marks;
++    std::function<bool(const LoaderModule &)> visit = [&](const LoaderModule &m) {
++        if (marks[m.base] == 1) {
++            g_error = "unsupported cyclic DLL dependency at " + m.name;
++            return false;
++        }
++        if (marks[m.base] == 2)
++            return true;
++        marks[m.base] = 1;
++        for (const auto &name : m.dependencies) {
++            const LoaderModule *dep = loader_module_named(name.c_str());
++            if (!dep) {
++                g_error = "missing mapped dependency " + name;
++                return false;
++            }
++            if (!visit(*dep))
++                return false;
++        }
++        marks[m.base] = 2;
++        if (m.base != loader_image_base())
++            order.push_back(m.base);
++        return true;
++    };
++    return visit(root);
++}
++#ifdef POPM_TESTING
++void loader_test_modules(const LoaderModule &main, const std::vector<LoaderModule> &aux) {
++    g_main = main;
++    g_base = main.base;
++    g_size = main.size;
++    g_aux = aux;
++}
++bool loader_test_bind(const std::vector<uint8_t> &file, uint32_t base, uint32_t size) {
++    return patch_iat(file, 0, 0x10b, base, size);
++}
++#endif
+diff --git a/runtime/loader.h b/runtime/loader.h
+index bfe336c..24c1770 100644
+--- a/runtime/loader.h
++++ b/runtime/loader.h
+@@ -50,6 +50,9 @@ struct LoaderModule {
+     uint32_t base = 0, size = 0, entry = 0, export_rva = 0, export_size = 0;
+     bool attached = false;
+     uint32_t load_refs = 0;
++    bool initializing = false;
++    std::vector<std::string> dependencies;
++    std::vector<uint32_t> acquired_dependencies;
+     std::vector<uint8_t> initial_image;
+     std::vector<SectionInfo> sections;
+ };
+@@ -91,3 +94,11 @@ X86 *loader_context();
+ // Calls the PE entry point through recomp_call using loader_context().
+ void run_entry();
+ void run_entry(X86 *c);
++
++// Validate the configured guest dependency closure before running any entries.
++// Cyclic guest DLL graphs are explicitly unsupported by this loader slice.
++bool loader_dependency_order(const LoaderModule &root, std::vector<uint32_t> &order);
++#ifdef POPM_TESTING
++void loader_test_modules(const LoaderModule &main, const std::vector<LoaderModule> &aux);
++bool loader_test_bind(const std::vector<uint8_t> &file, uint32_t base, uint32_t size);
++#endif
+diff --git a/runtime/tests/dll_binding_tests.cpp b/runtime/tests/dll_binding_tests.cpp
+new file mode 100644
+index 0000000..70acd2a
+--- /dev/null
++++ b/runtime/tests/dll_binding_tests.cpp
+@@ -0,0 +1,145 @@
++// Synthetic PE import/export storage and translated entry callbacks only.
++#include "../imports.h"
++#include "../loader.h"
++#include "../memory.h"
++#include "../win32.h"
++#include "../../platform/os.h"
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <vector>
++static int failures;
++#define CHECK(x) do { if (!(x)) { fprintf(stderr,"line %d: %s\n",__LINE__,#x); ++failures; } } while (0)
++static std::vector<uint32_t> events, reserved_values;
++static uint32_t fail_base;
++static void entry(X86 *c) {
++    uint32_t base = arg(c,0), reason = arg(c,1);
++    events.push_back(base | reason);
++    reserved_values.push_back(arg(c,2));
++    c->r[R_EAX] = reason == 1 && base == fail_base ? 0 : 1;
++    c->eip = rd32(c->r[R_ESP]);
++    c->r[R_ESP] += 16;
++    recomp_return(c);
++}
++static uint32_t invoke(X86 *c, const char *name, uint32_t arg0) {
++    uint32_t esp=c->r[R_ESP];
++    wr32(esp-8,GUEST_RETURN_SENTINEL); wr32(esp-4,arg0);
++    c->r[R_ESP]=esp-8;
++    CHECK(imports_dispatch(c,imports_resolve("KERNEL32.dll",name)));
++    CHECK(c->r[R_ESP]==esp);
++    return c->r[R_EAX];
++}
++static LoaderModule make(const char *name,uint32_t base) {
++    LoaderModule m; m.name=name; m.base=base; m.size=0x1000; m.entry=base+0x800;
++    m.export_rva=0x100;m.export_size=0x100;
++    memset(g_mem+base,0,m.size);
++    wr32(base+0x110,7);wr32(base+0x114,2);wr32(base+0x118,2);
++    wr32(base+0x11c,0x200);wr32(base+0x120,0x220);wr32(base+0x124,0x230);
++    wr32(base+0x200,0x800);wr32(base+0x204,0x900);
++    wr32(base+0x220,0x300);wr32(base+0x224,0x310);
++    wr16(base+0x230,0);wr16(base+0x232,1);
++    gm_put_str(base+0x300,"Code",16);gm_put_str(base+0x310,"Data",16);
++    m.initial_image.assign(g_mem+base,g_mem+base+m.size);return m;
++}
++int main() {
++    os_setenv("RECOMP_STRICT_EXECUTION","1");
++    mem_init(); imports_init(); win32_init(".");
++    constexpr uint32_t a=0x01000000,b=0x01100000,d=0x01200000;
++    static const uint32_t addresses[]={a+0x800,b+0x800,d+0x800};
++    static void (*const functions[])(X86*)={entry,entry,entry};
++    static RecompHookFn hooks[3]{};static uint8_t hooked[3]{};
++    static const RecompModule translated={"synthetic-dlls",a,d+0x1000,addresses,3,functions,hooks,hooked,nullptr,0,nullptr};
++    recomp_module_register(&translated);
++    LoaderModule main=make(RECOMP_EXECUTABLE,0x00400000);main.attached=true;
++    LoaderModule ma=make("A.dll",a),mb=make("B.dll",b),md=make("D.dll",d);
++    ma.dependencies={"B.dll","D.dll"};md.dependencies={"B.dll"};main.dependencies={"A.dll"};
++    loader_test_modules(main,{ma,md,mb}); // deliberately reverse dependency order
++    X86 c;loader_init_context(&c);uint32_t esp=c.r[R_ESP];
++    std::vector<uint32_t> order;
++    CHECK(loader_dependency_order(*loader_module_named(RECOMP_EXECUTABLE),order));
++    CHECK((order==std::vector<uint32_t>{b,d,a}));
++    CHECK(win32_attach_static_modules(&c));
++    CHECK((events==std::vector<uint32_t>{b|1,d|1,a|1}));
++    CHECK(loader_module_named("B.dll")->load_refs==2);
++    CHECK(win32_attach_static_modules(&c) && events.size()==3 &&
++          loader_module_named("B.dll")->load_refs==2);
++    CHECK(c.r[R_ESP]==esp);
++    for(auto value:reserved_values)CHECK(value!=0 && value<GUEST_SIZE);
++    gm_put_str(0x00300000,"A.dll",16);
++    CHECK(invoke(&c,"LoadLibraryA",0x00300000)==a);
++    CHECK(events.size()==3 && loader_module_named("A.dll")->load_refs==2);
++    CHECK(invoke(&c,"FreeLibrary",a)==1 && events.size()==3);
++    win32_detach_process_modules(&c);
++    CHECK((events==std::vector<uint32_t>{b|1,d|1,a|1,a,d,b}));
++    for(auto value:reserved_values)CHECK(value!=0);
++    win32_detach_process_modules(&c);CHECK(events.size()==6);
++    CHECK(!loader_module_named("B.dll")->load_refs);
++    // Dynamic dependency acquisition and reverse release use NULL reserved.
++    events.clear();reserved_values.clear();
++    CHECK(invoke(&c,"LoadLibraryA",0x00300000)==a);
++    CHECK(invoke(&c,"FreeLibrary",a)==1);
++    CHECK((events==std::vector<uint32_t>{b|1,d|1,a|1,a,d,b}));
++    for(auto value:reserved_values)CHECK(value==0);
++    // A failing top-level entry unwinds the shared dependency closure once.
++    events.clear();reserved_values.clear();fail_base=a;
++    CHECK(invoke(&c,"LoadLibraryA",0x00300000)==0);
++    CHECK((events==std::vector<uint32_t>{b|1,d|1,a|1,a,d,b}));
++    CHECK(!loader_module_named("B.dll")->load_refs && !loader_module_named("A.dll")->attached);
++    // Failure of a nested dependency unwinds earlier acquisitions.
++    events.clear();reserved_values.clear();fail_base=d;
++    loader_test_modules(main,{ma,md,mb});
++    CHECK(!win32_attach_static_modules(&c));
++    CHECK((events==std::vector<uint32_t>{b|1,d|1,d,b}));
++    CHECK(!loader_module_named("B.dll")->attached);
++    // Roll back an earlier successful EXE root if a later root fails.
++    events.clear();reserved_values.clear();fail_base=a;
++    LoaderModule two_roots=main;two_roots.dependencies={"B.dll","A.dll"};
++    loader_test_modules(two_roots,{ma,md,mb});
++    CHECK(!win32_attach_static_modules(&c));
++    CHECK((events==std::vector<uint32_t>{b|1,d|1,a|1,a,d,b}));
++    CHECK(!loader_module_named("B.dll")->load_refs);
++    // A failed load must retain another caller's preexisting B reference.
++    loader_test_modules(main,{ma,md,mb});events.clear();fail_base=0;
++    gm_put_str(0x00300000,"B.dll",16);CHECK(invoke(&c,"LoadLibraryA",0x00300000)==b);
++    events.clear();fail_base=a;gm_put_str(0x00300000,"A.dll",16);
++    CHECK(invoke(&c,"LoadLibraryA",0x00300000)==0);
++    CHECK((events==std::vector<uint32_t>{d|1,a|1,a,d}));
++    CHECK(loader_module_named("B.dll")->load_refs==1 && loader_module_named("B.dll")->attached);
++    CHECK(invoke(&c,"FreeLibrary",b)==1);
++    fail_base=0;events.clear();
++    loader_module_named("B.dll")->dependencies={"A.dll"};
++    CHECK(!win32_attach_static_modules(&c) && events.empty());
++    CHECK(strstr(loader_error(),"cyclic")!=nullptr);
++    loader_module_named("B.dll")->dependencies={"MISSING.dll"};
++    CHECK(!loader_dependency_order(*loader_module_named("A.dll"),order));
++    // Bind code by name and data by ordinal into a caller after all modules
++    // have been published. No shim/trampoline or copied data is acceptable.
++    main.dependencies.clear();loader_test_modules(main,{ma,md,mb});
++    std::vector<uint8_t> file(128);uint32_t imp=0x400,impsize=40;
++    memcpy(file.data()+104,&imp,4);memcpy(file.data()+108,&impsize,4);
++    uint32_t base=main.base;memset(g_mem+base+0x400,0,0x300);
++    wr32(base+0x400,0x500);wr32(base+0x40c,0x480);wr32(base+0x410,0x540);
++    gm_put_str(base+0x480,"B.dll",16);wr32(base+0x500,0x580);wr32(base+0x504,0x80000008);
++    gm_put_str(base+0x582,"Code",16);
++    CHECK(loader_test_bind(file,base,main.size));
++    CHECK(rd32(base+0x540)==b+0x800 && rd32(base+0x544)==b+0x900);
++    wr32(rd32(base+0x544),0x12345678);CHECK(rd32(b+0x900)==0x12345678);
++    CHECK(loader_module_named(RECOMP_EXECUTABLE)->dependencies==std::vector<std::string>{"B.dll"});
++    gm_put_str(base+0x582,"NoSuchExport",32);
++    CHECK(!loader_test_bind(file,base,main.size));
++    CHECK(strstr(loader_error(),"missing mapped export")!=nullptr);
++    // A missing terminator in the declared descriptor directory is rejected.
++    uint32_t short_size=20;memcpy(file.data()+108,&short_size,4);
++    gm_put_str(base+0x582,"Code",16);
++    CHECK(!loader_test_bind(file,base,main.size));
++    CHECK(strstr(loader_error(),"unterminated import descriptor")!=nullptr);
++    memcpy(file.data()+108,&impsize,4);
++    wr32(base+0x40c,main.size-2);memset(g_mem+base+main.size-2,'x',2);
++    CHECK(!loader_test_bind(file,base,main.size));
++    CHECK(strstr(loader_error(),"unterminated")!=nullptr);
++    // Entry-less DLLs need no fabricated translated entry to be loadable.
++    auto *empty=loader_module_named("B.dll");empty->entry=0;empty->dependencies.clear();
++    gm_put_str(0x00300000,"B.dll",16);CHECK(invoke(&c,"LoadLibraryA",0x00300000)==b);
++    CHECK(invoke(&c,"FreeLibrary",b)==1);
++    printf("dll_binding_tests: %d failures\n",failures);return failures?1:0;
++}
+diff --git a/runtime/win32.h b/runtime/win32.h
+index b59ecac..3596ba9 100644
+--- a/runtime/win32.h
++++ b/runtime/win32.h
+@@ -559,3 +559,10 @@ const std::vector<UnknownCall> &recomp_unknown_calls();
+ jmp_buf *process_exit_jmp();
+ bool process_exited();
+ uint32_t process_exit_code();
++
++// Auxiliary guest DLL lifetime. Reserved values passed to guest entries are
++// arena addresses (or zero), never host pointers.
++bool win32_attach_static_modules(X86 *c);
++void win32_detach_process_modules(X86 *c);
++void win32_exit_initialization_failed(X86 *c);
++bool process_forced_termination();

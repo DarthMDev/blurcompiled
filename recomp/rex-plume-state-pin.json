@@ -1,0 +1,23 @@
+{
+  "purpose": "Pin register definitions and effective-state policy used by the new CPU Plume frontend; no recovered guest symbols",
+  "files": {
+    "include/rex/graphics/registers.h": "2ccf7732db706133acfec34f7d70659e3d12b0533bc51e8b95ca8137cc4d1c40",
+    "include/rex/graphics/register_table.inc": "c9dfdbfe72763051736230850ee92eaf73b7e2e9be328ac8b83df7d3b5aa9e53",
+    "include/rex/graphics/register_file.h": "8bad017c6b8ad66c49047088b39c0372e95dddee661b57fb1f2bc7a770343e6d",
+    "include/rex/graphics/xenos.h": "f7dcbf856feaeb0350c9c9aaf5c16a768b4147fc487819cd513e0cc68fc16fd5",
+    "src/graphics/util/draw.cpp": "ea2638c3ff863c7d674f9dcffc555500537ea38a6c3c8aadb8d4f5ee1e06dc3e",
+    "src/graphics/metal_runtime/metal_command_processor.cpp": "f302e430893725f788378b3bd18b89d0da6ff9868d10ac5e910af4e68c0eb7a3",
+    "include/rex/graphics/pipeline/shader/shader.h": "7d57dd98c96077693eff0cabc969e5ccd8d7fcbb6587f9d37bac9192ddfba621",
+    "include/rex/graphics/pipeline/shader/spirv_translator.h": "97d4f5c93ac2ac0a04a0bcff7254907fb12df5d83e29253c073b2ed8c258b552",
+    "include/rex/graphics/pipeline/render_target/cache.h": "11e875cc3f8d4b09e634c116e2ade6792090e71ee73f8070757236c74467e379",
+    "include/rex/graphics/primitive_processor.h": "a786efc59f7eef4cf128222232c121c67780ae678425c07ba388066820034684",
+    "include/rex/graphics/util/draw.h": "c5066ec6c92958ad5fd9e4bbfb034d596e0980ed3acf01a4ecbfec7060a0da4d",
+    "src/graphics/pipeline/render_target/cache.cpp": "cf6539a76788b32262359bd0aa9da80503b641b2e4cecdec4a0e2dccc1e8052e",
+    "src/graphics/pipeline/texture/cache.cpp": "a62b8e24388a5bbb02de54b84edf3d6d875ad95cc6596f9de109de26c9fb51a4",
+    "src/graphics/pipeline/texture/util.cpp": "c16fb6f11fbfe4327d8e648353b8f10f661d5f3b7520ef831cfc67ce1569b81d",
+    "src/graphics/primitive_processor.cpp": "59d5029121b97310bd1800edc629fb5c9363dc49484161b2486eef2a9618b6dd",
+    "src/graphics/vulkan/texture_cache.cpp": "dcaf1964781c58efae6525fda95673b3da93a199026ba86145bddc3170f73008",
+    "src/graphics/pipeline/shader/spirv_translator_fetch.cpp": "b4cba3533cb7f5bdf92206493b49ded9e4e781194a23d363ffabd06ebda77e39",
+    "src/graphics/pipeline/shader/dxbc_translator_fetch.cpp": "9bbd02d52432fe55ec95d1b6f03a0cba46ad98a1ee4b974fe1fcaac4f6c47530"
+  }
+}

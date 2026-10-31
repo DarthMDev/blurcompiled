@@ -1,0 +1,1 @@
+{"version":3,"configurePresets":[{"name":"macos","generator":"Ninja","binaryDir":"${sourceDir}/../../local/startup-native-r2/compare-step/crypto-build","cacheVariables":{"CMAKE_BUILD_TYPE":"Release","CMAKE_OSX_ARCHITECTURES":"arm64"}}]}

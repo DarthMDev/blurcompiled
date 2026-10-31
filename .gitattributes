@@ -1,0 +1,2 @@
+*.patch whitespace=-trailing-space,-blank-at-eof
+LICENSE whitespace=-blank-at-eof

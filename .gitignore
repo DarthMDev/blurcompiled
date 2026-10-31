@@ -1,0 +1,36 @@
+/build*/
+/local/
+/reports/
+/reference/
+/extracted/
+/recomp/build/
+__pycache__/
+*.pyc
+.DS_Store
+*.exe
+*.dll
+*.asi
+*.pak
+*.bik
+*.luac
+*.level*
+*.sig
+
+# Local caches and private session settings
+.pytest_cache/
+.entire/settings.local.json
+.env
+.env.*
+*.xex
+*.iso
+*.xcp
+*.dmp
+
+# Match directory entries even on volumes with unreliable d_type metadata
+/local
+/reports
+/build*
+/.pytest_cache
+/docs/history/PC_RESEARCH_README.md
+# Captured game shader payload: local input, never repository source.
+/recomp/native/rex_plume_embedded_shaders.hpp

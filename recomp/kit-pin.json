@@ -1,0 +1,6 @@
+{
+  "repository": "https://github.com/veritr1x/recomp-kit.git",
+  "commit": "eb32cc42623e0e9e868b9d27423a57d5a5cba56b",
+  "license": "MIT; retain upstream LICENSE and NOTICE",
+  "local_checkout": "local/recomp-kit"
+}

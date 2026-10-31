@@ -1,0 +1,685 @@
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -1,6 +1,13 @@
+ # Changelog
+ 
+ ## Unreleased
++
++- Lower CMPNLESS and CVTPD2PS with synthetic register/memory, NaN, upper-lane
++  and flag preservation checks; yield the cooperative baton on failed CMPXCHG8B
++  through the existing helper so a contended lock owner can resume.
++- Replace placeholder crypto hashes with streaming SHA-1 for keyless legacy
++  CryptoAPI contexts, including distinct handles, length queries, finalization
++  and error checks. Other algorithms and key/container operations remain unsupported.
+ 
+ - Lower legacy CVTPS2PD register and 64-bit memory forms through the existing
+   packed widening helper, preserving aliased sources; verify result bits with
+--- a/runtime/CMakeLists.txt
++++ b/runtime/CMakeLists.txt
+@@ -3,7 +3,7 @@
+ set(POP_RUNTIME_SOURCES
+   memory.cpp loader.cpp imports.cpp cpu.cpp thunks.cpp seh.cpp profile.cpp kernel32.cpp kernel32_wide.cpp
+   resources.cpp oleaut32.cpp mods_seam.cpp user32.cpp user32_wide.cpp user32_vcl.cpp user32_static.cpp
+-  misc.cpp misc_dlls.cpp comctl32.cpp gdi32.cpp gdi32_draw.cpp gdi32_text.cpp gdi32_truetype.cpp msimg32.cpp
++  misc.cpp crypto.cpp misc_dlls.cpp comctl32.cpp gdi32.cpp gdi32_draw.cpp gdi32_text.cpp gdi32_truetype.cpp msimg32.cpp
+   media_foundation.cpp layout.cpp interp.cpp discovery.cpp)
+ 
+ # The faces the runtime's GDI draws Windows' own UI fonts with
+--- a/runtime/imports.cpp
++++ b/runtime/imports.cpp
+@@ -1,3 +1,4 @@
++#include "crypto.h"
+ #include "imports.h"
+ #include "gdi32_internal.h"
+ #include "user32_internal.h"
+@@ -616,6 +617,7 @@
+     user32_wide_register();
+     user32_vcl_register();
+     imports_register(g_misc_shims, g_misc_shim_count);
++    imports_register(g_crypto_shims, g_crypto_shim_count);
+     imports_register(g_gdi32_shims, g_gdi32_shim_count);
+     extern void gdi_model_register();
+     gdi_model_register();
+--- a/runtime/misc.cpp
++++ b/runtime/misc.cpp
+@@ -1064,10 +1064,10 @@
+         return;
+     }
+     memset(g_mem + pAdapterInfo, 0, needed);
+-    wr32(pAdapterInfo + 4, 1); // ComboIndex
++    wr32(pAdapterInfo + 4, 1);                                                   // ComboIndex
+     gm_put_str(pAdapterInfo + 8, "{71A91642-D6D2-48F6-BB5B-167825E61E1A}", 260); // AdapterName
+-    gm_put_str(pAdapterInfo + 268, "Blur Virtual Ethernet Adapter", 132); // Description
+-    wr32(pAdapterInfo + 400, 6); // AddressLength
++    gm_put_str(pAdapterInfo + 268, "Blur Virtual Ethernet Adapter", 132);        // Description
++    wr32(pAdapterInfo + 400, 6);                                                 // AddressLength
+     // MAC address: 02:00:4C:4F:43:4C
+     g_mem[pAdapterInfo + 404] = 0x02;
+     g_mem[pAdapterInfo + 405] = 0x00;
+@@ -2109,48 +2109,11 @@
+     set_eax(c, 0xffffffffu);
+ }
+ 
+-static void a_CryptAcquireContextA(X86 *c) {
+-    uint32_t phProv = arg(c, 0);
+-    if (phProv && gm_valid(phProv, 4))
+-        wr32(phProv, 1);
+-    set_eax(c, 1);
+-}
+-static void a_CryptReleaseContext(X86 *c) {
+-    set_eax(c, 1);
+-}
+ static void a_CryptGenRandom(X86 *c) {
+     uint32_t len = arg(c, 1);
+     uint32_t buf = arg(c, 2);
+     if (buf && len && gm_valid(buf, len))
+         arc4random_buf(g_mem + buf, len);
+-    set_eax(c, 1);
+-}
+-static void a_CryptCreateHash(X86 *c) {
+-    uint32_t phHash = arg(c, 4);
+-    if (phHash && gm_valid(phHash, 4))
+-        wr32(phHash, 1);
+-    set_eax(c, 1);
+-}
+-static void a_CryptHashData(X86 *c) {
+-    set_eax(c, 1);
+-}
+-static void a_CryptGetHashParam(X86 *c) {
+-    uint32_t param = arg(c, 1);
+-    uint32_t buf = arg(c, 2);
+-    uint32_t plen = arg(c, 3);
+-    if (plen && gm_valid(plen, 4)) {
+-        uint32_t max_len = rd32(plen);
+-        if (param == 2 && buf && gm_valid(buf, 16) && max_len >= 16) {
+-            memset(g_mem + buf, 0x42, 16);
+-            wr32(plen, 16);
+-        } else if (param == 4 && buf && gm_valid(buf, 4)) {
+-            wr32(buf, 16);
+-            wr32(plen, 4);
+-        }
+-    }
+-    set_eax(c, 1);
+-}
+-static void a_CryptDestroyHash(X86 *c) {
+     set_eax(c, 1);
+ }
+ static void a_RegisterEventSourceA(X86 *c) {
+@@ -2189,13 +2152,7 @@
+     {"ADVAPI32.dll", "RegSaveKeyW", 3, a_RegDenied},
+     {"ADVAPI32.dll", "RegRestoreKeyW", 3, a_RegDenied},
+     {"ADVAPI32.dll", "RegReplaceKeyW", 4, a_RegDenied},
+-    {"ADVAPI32.dll", "CryptAcquireContextA", 5, a_CryptAcquireContextA},
+-    {"ADVAPI32.dll", "CryptReleaseContext", 2, a_CryptReleaseContext},
+     {"ADVAPI32.dll", "CryptGenRandom", 3, a_CryptGenRandom},
+-    {"ADVAPI32.dll", "CryptCreateHash", 5, a_CryptCreateHash},
+-    {"ADVAPI32.dll", "CryptHashData", 4, a_CryptHashData},
+-    {"ADVAPI32.dll", "CryptGetHashParam", 5, a_CryptGetHashParam},
+-    {"ADVAPI32.dll", "CryptDestroyHash", 1, a_CryptDestroyHash},
+     {"ADVAPI32.dll", "RegisterEventSourceA", 2, a_RegisterEventSourceA},
+     {"ADVAPI32.dll", "ReportEventA", 9, a_ReportEventA},
+     {"ADVAPI32.dll", "DeregisterEventSource", 1, a_DeregisterEventSource},
+@@ -2382,44 +2339,44 @@
+     {"WS2_32.dll", "ntohl", 1, w_ntohl},
+ 
+     // WS2_32.dll Ordinals imported by PE binaries
+-    {"WS2_32.dll", "ord1", 3, nullptr},        // accept
+-    {"WS2_32.dll", "ord2", 3, w_bind},        // bind
+-    {"WS2_32.dll", "ord3", 1, w_closesocket}, // closesocket
+-    {"WS2_32.dll", "ord4", 3, w_connect},     // connect
+-    {"WS2_32.dll", "ord5", 3, nullptr},        // getpeername
+-    {"WS2_32.dll", "ord6", 3, nullptr},        // getsockname
+-    {"WS2_32.dll", "ord7", 5, w_getsockopt},   // getsockopt
+-    {"WS2_32.dll", "ord8", 1, w_htonl},       // htonl
+-    {"WS2_32.dll", "ord9", 1, w_htons},       // htons
+-    {"WS2_32.dll", "ord10", 3, w_ioctlsocket}, // ioctlsocket
+-    {"WS2_32.dll", "ord11", 1, w_inet_addr},   // inet_addr
+-    {"WS2_32.dll", "ord12", 1, w_inet_ntoa},   // inet_ntoa
+-    {"WS2_32.dll", "ord13", 2, nullptr},        // listen
+-    {"WS2_32.dll", "ord14", 1, w_ntohl},       // ntohl
+-    {"WS2_32.dll", "ord15", 1, w_ntohs},       // ntohs
+-    {"WS2_32.dll", "ord16", 4, w_recv},        // recv
+-    {"WS2_32.dll", "ord17", 6, w_recvfrom},    // recvfrom
+-    {"WS2_32.dll", "ord18", 5, w_select},      // select
+-    {"WS2_32.dll", "ord19", 4, w_send},        // send
+-    {"WS2_32.dll", "ord20", 6, w_sendto},      // sendto
+-    {"WS2_32.dll", "ord21", 5, w_setsockopt},  // setsockopt
+-    {"WS2_32.dll", "ord22", 2, w_shutdown},    // shutdown
+-    {"WS2_32.dll", "ord23", 3, w_socket},      // socket
+-    {"WS2_32.dll", "ord52", 1, w_gethostbyname}, // gethostbyname
+-    {"WS2_32.dll", "ord57", 2, w_gethostname}, // gethostname
++    {"WS2_32.dll", "ord1", 3, nullptr},             // accept
++    {"WS2_32.dll", "ord2", 3, w_bind},              // bind
++    {"WS2_32.dll", "ord3", 1, w_closesocket},       // closesocket
++    {"WS2_32.dll", "ord4", 3, w_connect},           // connect
++    {"WS2_32.dll", "ord5", 3, nullptr},             // getpeername
++    {"WS2_32.dll", "ord6", 3, nullptr},             // getsockname
++    {"WS2_32.dll", "ord7", 5, w_getsockopt},        // getsockopt
++    {"WS2_32.dll", "ord8", 1, w_htonl},             // htonl
++    {"WS2_32.dll", "ord9", 1, w_htons},             // htons
++    {"WS2_32.dll", "ord10", 3, w_ioctlsocket},      // ioctlsocket
++    {"WS2_32.dll", "ord11", 1, w_inet_addr},        // inet_addr
++    {"WS2_32.dll", "ord12", 1, w_inet_ntoa},        // inet_ntoa
++    {"WS2_32.dll", "ord13", 2, nullptr},            // listen
++    {"WS2_32.dll", "ord14", 1, w_ntohl},            // ntohl
++    {"WS2_32.dll", "ord15", 1, w_ntohs},            // ntohs
++    {"WS2_32.dll", "ord16", 4, w_recv},             // recv
++    {"WS2_32.dll", "ord17", 6, w_recvfrom},         // recvfrom
++    {"WS2_32.dll", "ord18", 5, w_select},           // select
++    {"WS2_32.dll", "ord19", 4, w_send},             // send
++    {"WS2_32.dll", "ord20", 6, w_sendto},           // sendto
++    {"WS2_32.dll", "ord21", 5, w_setsockopt},       // setsockopt
++    {"WS2_32.dll", "ord22", 2, w_shutdown},         // shutdown
++    {"WS2_32.dll", "ord23", 3, w_socket},           // socket
++    {"WS2_32.dll", "ord52", 1, w_gethostbyname},    // gethostbyname
++    {"WS2_32.dll", "ord57", 2, w_gethostname},      // gethostname
+     {"WS2_32.dll", "ord111", 0, w_WSAGetLastError}, // WSAGetLastError
+     {"WS2_32.dll", "ord112", 1, w_WSASetLastError}, // WSASetLastError
+-    {"WS2_32.dll", "ord115", 2, w_WSAStartup}, // WSAStartup
+-    {"WS2_32.dll", "ord116", 0, w_WSACleanup}, // WSACleanup
+-    {"WS2_32.dll", "ord151", 2, nullptr},      // __WSAFDIsSet
++    {"WS2_32.dll", "ord115", 2, w_WSAStartup},      // WSAStartup
++    {"WS2_32.dll", "ord116", 0, w_WSACleanup},      // WSACleanup
++    {"WS2_32.dll", "ord151", 2, nullptr},           // __WSAFDIsSet
+     {"IPHLPAPI.DLL", "GetAdaptersInfo", 2, ip_GetAdaptersInfo},
+     {"iphlpapi.dll", "GetAdaptersInfo", 2, ip_GetAdaptersInfo},
+     {"NETAPI32.dll", "Netbios", 1, nullptr},
+     {"DDRAW.dll", "DirectDrawCreate", 3, nullptr},
+     {"DDRAW.dll", "DirectDrawEnumerateA", 2, nullptr},
+     {"DINPUT.dll", "DirectInputCreateA", 4, nullptr},
+-    {"DSOUND.dll", "ord1", 3, nullptr}, // DirectSoundCreate
+-    {"DSOUND.dll", "ord2", 2, nullptr}, // DirectSoundEnumerateA
++    {"DSOUND.dll", "ord1", 3, nullptr},  // DirectSoundCreate
++    {"DSOUND.dll", "ord2", 2, nullptr},  // DirectSoundEnumerateA
+     {"DSOUND.dll", "ord11", 3, nullptr}, // DirectSoundCreate8
+     {"XINPUT1_3.dll", "ord1", 2, nullptr},
+     {"XINPUT1_3.dll", "ord2", 2, nullptr},
+--- a/runtime/x86.h
++++ b/runtime/x86.h
+@@ -431,9 +431,9 @@
+     recomp_cvtps2pd_bits(c, dst, c->xmm[src][0], c->xmm[src][1]);
+ }
+ 
+-static inline void recomp_cvtpd2ps(X86 *c, int dst, int src) {
+-    uint64_t b0 = (uint64_t)c->xmm[src][0] | ((uint64_t)c->xmm[src][1] << 32);
+-    uint64_t b1 = (uint64_t)c->xmm[src][2] | ((uint64_t)c->xmm[src][3] << 32);
++/* Default rounding/masked exceptions, as in the scalar SSE model. Capture
++ * both doubles before writing any destination lane; legacy SSE zeros bits 127:64. */
++static inline void recomp_cvtpd2ps_bits(X86 *c, int dst, uint64_t b0, uint64_t b1) {
+     double d0, d1;
+     memcpy(&d0, &b0, 8);
+     memcpy(&d1, &b1, 8);
+@@ -443,6 +443,12 @@
+     memcpy(&c->xmm[dst][1], &s1, 4);
+     c->xmm[dst][2] = 0;
+     c->xmm[dst][3] = 0;
++}
++
++static inline void recomp_cvtpd2ps(X86 *c, int dst, int src) {
++    uint64_t b0 = (uint64_t)c->xmm[src][0] | ((uint64_t)c->xmm[src][1] << 32);
++    uint64_t b1 = (uint64_t)c->xmm[src][2] | ((uint64_t)c->xmm[src][3] << 32);
++    recomp_cvtpd2ps_bits(c, dst, b0, b1);
+ }
+ 
+ static inline void recomp_addps(X86 *c, int dst, int src) {
+--- a/tools/recomp/translate.py
++++ b/tools/recomp/translate.py
+@@ -2940,15 +2940,10 @@
+             return L
+ 
+         if m == "CMPXCHG8B":
+-            # LOCK needs no host atomic under the cooperative guest scheduler.
+-            # Capture the guest address before the failure path changes EDX:EAX.
+-            L.append("uint32_t ad_ = %s;" % addr_expr(ops[0]))
+-            L.append("uint64_t dst_ = rd64(ad_);")
+-            L.append("uint64_t expected_ = ((uint64_t)c->r[2] << 32) | c->r[0];")
+-            L.append("c->eflags_zf = (expected_ == dst_);")
+-            L.append("if (c->eflags_zf) { wr64(ad_, ((uint64_t)c->r[1] << 32) | c->r[3]); }")
+-            L.append("else { c->r[0] = (uint32_t)dst_; c->r[2] = (uint32_t)(dst_ >> 32); }")
+-            return L
++            # The cooperative baton makes the comparison/store indivisible.
++            # On failure the helper publishes EDX:EAX/ZF before yielding, so
++            # a lock owner parked at an import can run and release its lock.
++            return ["recomp_cmpxchg8b(c, %s);" % addr_expr(ops[0])]
+ 
+         if m == "XADD":
+             size = operand_size(ops)
+@@ -3368,6 +3363,23 @@
+                 # The legacy memory form reads exactly 64 bits, even though
+                 # its destination is 128 bits. Snapshot the address once.
+                 L.append("{ uint32_t a_ = %s; recomp_cvtps2pd_bits(c, %d, rd32(a_), rd32(a_ + 4u)); }"
++                         % (addr_expr(src), dst.reg))
++            return L
++
++        if m in ("CVTPD2PS", "CMPNLESS"):
++            dst, src = ops[0], ops[1]
++            if dst.kind != "xmm" or src.kind not in ("xmm", "mem"):
++                raise TranslateError("invalid %s operands" % m)
++            if m == "CMPNLESS":
++                # Predicate 6 is unordered-or-greater. Only lane zero changes;
++                # the helper leaves upper lanes and integer flags untouched.
++                value = ("xmm_f32(c, %d)" % src.reg if src.kind == "xmm"
++                         else "rdf32(%s)" % addr_expr(src))
++                L.append("recomp_cmpnless(c, %d, %s);" % (dst.reg, value))
++            elif src.kind == "xmm":
++                L.append("recomp_cvtpd2ps(c, %d, %d);" % (dst.reg, src.reg))
++            else:
++                L.append("{ uint32_t a_ = %s; recomp_cvtpd2ps_bits(c, %d, rd64(a_), rd64(a_ + 8u)); }"
+                          % (addr_expr(src), dst.reg))
+             return L
+ 
+--- a/tools/recomp/tests/harness.c
++++ b/tools/recomp/tests/harness.c
+@@ -24,6 +24,25 @@
+ }
+ RecompDirty g_dirty[RECOMP_DIRTY_SLOTS];
+ uint32_t g_dirty_count;
++
++/* A contention test models another guest thread releasing one qword when
++ * this thread gives up the baton. Ordinary differential tests leave it unarmed. */
++static uint32_t harness_yield_count, harness_release_addr;
++void harness_yield_release(uint32_t addr) {
++    harness_release_addr = addr;
++    harness_yield_count = 0;
++}
++uint32_t harness_yields(void) {
++    return harness_yield_count;
++}
++int host_guest_yield(void) {
++    ++harness_yield_count;
++    if (harness_release_addr) {
++        wr64(harness_release_addr, 0);
++        harness_release_addr = 0;
++    }
++    return 1;
++}
+ 
+ static uint32_t last_shim, last_unknown, last_div_error;
+ static unsigned harness_checks_run;
+--- a/tools/recomp/tests/test_translate_insns.py
++++ b/tools/recomp/tests/test_translate_insns.py
+@@ -667,6 +667,31 @@
+                  "mem": [(SCRATCH + 0x100, struct.pack('<Q', rng.getrandbits(64)))]},
+     recovered=True))
+ 
++# Conversion/comparison inputs are synthetic bytes, decoded through the same
++# recovery path as PE bytes. All result lanes and register sources are stored.
++for index, (name, opcode) in enumerate([
++        ("CVTPD2PS alias", "66 0f 5a c0 0f 11 07"),
++        ("CVTPD2PS register", "66 0f 5a d8 0f 11 1f"),
++        ("CVTPD2PS memory", "66 0f 5a 1e 0f 11 1f"),
++        ("CMPNLESS alias", "f3 0f c2 c0 06 0f 11 07"),
++        ("CMPNLESS register", "f3 0f c2 d8 06 0f 11 1f"),
++        ("CMPNLESS memory", "f3 0f c2 1e 06 0f 11 1f")]):
++    CASES.append(Case(name, 0x0D02E400 + index * 0x100, [],
++                      "0f 10 06 0f 10 5e 10 " + opcode + " 0f 11 47 10 c3",
++                      lambda rng: {"regs": rand_regs(rng, ESI=SCRATCH + 0x301,
++                                                    EDI=SCRATCH + 0x100),
++                                   "mem": [(SCRATCH + 0x301,
++                                            bytes(rng.randrange(256) for _ in range(32)))]},
++                      recovered=True))
++
++CASES.append(Case("LOCK CMPXCHG8B retry loop", 0x0D02EA00,
++                  [(0, "XOR EAX,EAX"), (2, "XOR EDX,EDX"),
++                   (4, "CMPXCHG8B.LOCK qword ptr [EDI]"),
++                   (8, "JNZ 0x0d02ea00"), (10, "RET")],
++                  "31 c0 31 d2 f0 0f c7 0f 75 f6 c3",
++                  lambda rng: {"regs": rand_regs(rng, EBX=7, ECX=0, EDI=SCRATCH + 0x80),
++                               "mem": [(SCRATCH + 0x80, bytes(8))]}))
++
+ # -------------------------------------------------------------- translate --
+ 
+ class NoImage(object):
+@@ -839,7 +864,12 @@
+         value = ESP_INIT if name == "ESP" else regs[name]
+         c.r[i] = value
+         emu.u.reg_write(UC_REGS[i], value)
+-    c.eflags_misc = EFLAGS_MISC_INIT
++    flags = state.get("flags", EFLAGS_MISC_INIT)
++    emu.u.reg_write(UC_X86_REG_EFLAGS, flags)
++    c.eflags_misc = flags & ~0x0cd5
++    for field, bit in (("cf", 0), ("pf", 2), ("af", 4), ("zf", 6),
++                       ("sf", 7), ("df", 10), ("of", 11)):
++        setattr(c, "eflags_" + field, (flags >> bit) & 1)
+     c.fpu_cw = FPU_CW_INIT
+     c.fpu_tag = FPU_TAG_INIT
+ 
+@@ -924,6 +954,60 @@
+             "mem": [(SCRATCH + 0x301, struct.pack("<8I", lo, hi,
+                      0xdeadbeef, 0xabcdef01, 1, 2, 3, 4))]}
+         run_once(fixture, native, emu, random.Random(lo ^ hi))
++
++
++@pytest.mark.parametrize("case", [c for c in CASES if c.name.startswith(("CMPNLESS ", "CVTPD2PS "))],
++                         ids=lambda c: c.name)
++def test_compare_and_narrow_edges(case, built):
++    import copy
++    native, errors = built
++    assert case.name not in errors, errors.get(case.name)
++    emu = Emu()
++    if case.name.startswith("CMPNLESS "):
++        values = [0, 0x80000000, 1, 0x80000001, 0x3f800000, 0xbf800000,
++                  0x7f800000, 0xff800000, 0x7fc12345, 0xffc12345, 0x7f812345]
++        pairs = [(a, b) for a in values for b in values]
++    else:
++        values = [0, 0x8000000000000000, 1, 0x8000000000000001,
++                  0x380fffffc0000000, 0x3810000000000000, 0x36a0000000000000,
++                  0x3ff0000010000000, 0x3ff0000030000000, 0x47effffff0000000,
++                  0xc7effffff0000000, 0x7fefffffffffffff, 0x7ff0000000000000,
++                  0xfff0000000000000, 0x7ff8123456789abc, 0xfff0123456789abc]
++        pairs = list(zip(values, reversed(values)))
++    for a, b in pairs:
++        fixture = copy.copy(case)
++        if case.name.startswith("CMPNLESS "):
++            data = struct.pack("<8I", a, 0xabcdef01, 0xdeadbeef, 0x80000000,
++                               b, 0x12345678, 0xffffffff, 0x7fc00000)
++        else:
++            data = struct.pack("<4Q", a, b, 0x12345678abcdef01, 0xdeadbeef80000000)
++        fixture.setup = lambda rng: {
++            "regs": rand_regs(rng, ESI=SCRATCH + 0x301, EDI=SCRATCH + 0x100),
++            "flags": 0xad7, "mem": [(SCRATCH + 0x301, data)]}
++        run_once(fixture, native, emu, random.Random(a ^ b))
++
++
++def test_cmpxchg8b_contended_retry_gives_the_lock_owner_a_turn(built):
++    native, errors = built
++    assert "LOCK CMPXCHG8B retry loop" not in errors
++    # A stale inline lowering spins forever. Bound the native invocation in a
++    # child, where the test yield models a second thread releasing the lock.
++    script = r"""
++import ctypes as C, importlib.util, struct, sys
++spec=importlib.util.spec_from_file_location('insns', sys.argv[1])
++t=importlib.util.module_from_spec(spec);spec.loader.exec_module(t)
++n=t.Native(sys.argv[2]);c=t.X86();c.r[4]=t.ESP_INIT
++c.r[3]=7;c.r[1]=0;c.r[7]=t.SCRATCH+0x80
++n.write(t.ESP_INIT,struct.pack('<I',t.MAGIC_RET))
++n.write(t.SCRATCH+0x80,struct.pack('<Q',5))
++n.lib.harness_yield_release(t.SCRATCH+0x80)
++n.lib.harness_run(0x0D02EA00,C.byref(c))
++assert n.read(t.SCRATCH+0x80,8)==struct.pack('<Q',7)
++assert n.lib.harness_yields()==1
++assert c.eip==t.MAGIC_RET and c.r[4]==t.ESP_INIT+4
++"""
++    subprocess.run([sys.executable, "-c", script, __file__, native.lib._name],
++                   check=True, timeout=5)
+ 
+ 
+ def test_mmx_goes_to_the_mm_registers_and_xmm_forms_still_go_to_sse():
+--- /dev/null
++++ b/runtime/crypto.cpp
+@@ -0,0 +1,178 @@
++#include "crypto.h"
++#include "sha1.h"
++#include <map>
++#include <set>
++
++void set_last_error(uint32_t);
++namespace {
++constexpr uint32_t BAD_UID = 0x80090001u, BAD_HASH = 0x80090002u, BAD_KEY = 0x80090003u,
++                   BAD_ALG = 0x80090008u, BAD_FLAGS = 0x80090009u, BAD_TYPE = 0x8009000au,
++                   BAD_STATE = 0x8009000cu;
++struct Hash {
++    uint32_t provider;
++    GuestSha1 sha;
++    bool finished = false;
++};
++// Guest handles are opaque integers. The scheduler baton serializes the shims;
++// host pointers are never stored in guest memory or cast to guest handles.
++std::set<uint32_t> providers;
++std::map<uint32_t, Hash> hashes;
++uint32_t next_provider = 0xc0000000u, next_hash = 0xc1000000u;
++bool valid(uint32_t a, uint32_t n) {
++    return a && a < GUEST_SIZE && n <= GUEST_SIZE - a;
++}
++void fail(X86 *c, uint32_t e) {
++    set_eax(c, 0);
++    set_last_error(e);
++}
++void acquire(X86 *c) {
++    uint32_t out = arg(c, 0), container = arg(c, 1), provider = arg(c, 2), type = arg(c, 3),
++             flags = arg(c, 4);
++    if (!valid(out, 4) || (container && (!valid(container, 1) || rd8(container)))) {
++        fail(c, 87);
++        return;
++    }
++    if (flags != 0 && flags != 0xf0000000u) {
++        fail(c, BAD_FLAGS);
++        return;
++    }
++    if (type != 1) {
++        fail(c, 0x80090017u);
++        return;
++    }
++    if (provider) {
++        constexpr char name[] = "Microsoft Base Cryptographic Provider v1.0";
++        if (!valid(provider, sizeof name) || memcmp(g_mem + provider, name, sizeof name)) {
++            fail(c, 0x80090013u);
++            return;
++        }
++    }
++    uint32_t h = ++next_provider;
++    providers.insert(h);
++    wr32(out, h);
++    set_eax(c, 1);
++}
++void release(X86 *c) {
++    uint32_t h = arg(c, 0);
++    if (arg(c, 1)) {
++        fail(c, BAD_FLAGS);
++        return;
++    }
++    if (!providers.count(h)) {
++        fail(c, BAD_UID);
++        return;
++    }
++    for (const auto &entry : hashes)
++        if (entry.second.provider == h) {
++            fail(c, 170);
++            return;
++        }
++    providers.erase(h);
++    set_eax(c, 1);
++}
++void create(X86 *c) {
++    uint32_t provider = arg(c, 0), algorithm = arg(c, 1), out = arg(c, 4);
++    if (!providers.count(provider)) {
++        fail(c, BAD_UID);
++        return;
++    }
++    if (arg(c, 3)) {
++        fail(c, BAD_FLAGS);
++        return;
++    }
++    if (algorithm != 0x8004u) {
++        fail(c, BAD_ALG);
++        return;
++    }
++    if (arg(c, 2)) {
++        fail(c, BAD_KEY);
++        return;
++    }
++    if (!valid(out, 4)) {
++        fail(c, 87);
++        return;
++    }
++    uint32_t h = ++next_hash;
++    hashes.emplace(h, Hash{provider, {}, false});
++    wr32(out, h);
++    set_eax(c, 1);
++}
++void add(X86 *c) {
++    auto it = hashes.find(arg(c, 0));
++    if (it == hashes.end()) {
++        fail(c, BAD_HASH);
++        return;
++    }
++    if (arg(c, 3)) {
++        fail(c, BAD_FLAGS);
++        return;
++    }
++    if (it->second.finished) {
++        fail(c, BAD_STATE);
++        return;
++    }
++    uint32_t data = arg(c, 1), n = arg(c, 2);
++    if (n && !valid(data, n)) {
++        fail(c, 87);
++        return;
++    }
++    if (n)
++        it->second.sha.update(g_mem + data, n);
++    set_eax(c, 1);
++}
++void get(X86 *c) {
++    auto it = hashes.find(arg(c, 0));
++    if (it == hashes.end()) {
++        fail(c, BAD_HASH);
++        return;
++    }
++    if (arg(c, 4)) {
++        fail(c, BAD_FLAGS);
++        return;
++    }
++    uint32_t param = arg(c, 1), out = arg(c, 2), size = arg(c, 3);
++    if (param != 1 && param != 2 && param != 4) {
++        fail(c, BAD_TYPE);
++        return;
++    }
++    if (!valid(size, 4)) {
++        fail(c, 87);
++        return;
++    }
++    uint32_t required = param == 2 ? 20 : 4, capacity = rd32(size);
++    if (out && capacity < required) {
++        wr32(size, required);
++        fail(c, 234);
++        return;
++    }
++    if (out && !valid(out, required)) {
++        fail(c, 87);
++        return;
++    }
++    wr32(size, required);
++    if (out) {
++        if (param == 2) {
++            auto digest = it->second.sha.digest();
++            for (size_t i = 0; i < digest.size(); ++i)
++                wr8(out + uint32_t(i), digest[i]);
++            it->second.finished = true;
++        } else
++            wr32(out, param == 4 ? 20 : 0x8004u);
++    }
++    set_eax(c, 1);
++}
++void destroy(X86 *c) {
++    if (!hashes.erase(arg(c, 0))) {
++        fail(c, BAD_HASH);
++        return;
++    }
++    set_eax(c, 1);
++}
++} // namespace
++const ImportShim g_crypto_shims[] = {{"ADVAPI32.dll", "CryptAcquireContextA", 5, acquire},
++                                     {"ADVAPI32.dll", "CryptReleaseContext", 2, release},
++                                     {"ADVAPI32.dll", "CryptCreateHash", 5, create},
++                                     {"ADVAPI32.dll", "CryptHashData", 4, add},
++                                     {"ADVAPI32.dll", "CryptGetHashParam", 5, get},
++                                     {"ADVAPI32.dll", "CryptDestroyHash", 1, destroy}};
++const size_t g_crypto_shim_count = sizeof g_crypto_shims / sizeof g_crypto_shims[0];
+--- /dev/null
++++ b/runtime/crypto.h
+@@ -0,0 +1,6 @@
++#pragma once
++#include "imports.h"
++// Legacy unkeyed SHA-1 slice; containers, keys, signatures and other algorithms
++// are unsupported. The shim table is also usable in a bounded runtime module.
++extern const ImportShim g_crypto_shims[];
++extern const size_t g_crypto_shim_count;
+--- /dev/null
++++ b/runtime/sha1.h
+@@ -0,0 +1,85 @@
++#pragma once
++#include <array>
++#include <cstddef>
++#include <cstdint>
++#include <cstring>
++
++// Portable streaming SHA-1 for legacy guest file-integrity checks. This is a
++// new implementation; it has no platform APIs or recovered guest addresses.
++class GuestSha1 {
++    uint32_t state[5] = {0x67452301u, 0xefcdab89u, 0x98badcfeu, 0x10325476u, 0xc3d2e1f0u};
++    uint64_t length = 0;
++    uint8_t block[64] = {};
++    size_t used = 0;
++    static uint32_t rol(uint32_t n, unsigned k) {
++        return (n << k) | (n >> (32 - k));
++    }
++    void compress() {
++        uint32_t w[80];
++        for (unsigned i = 0; i < 16; ++i)
++            w[i] = uint32_t(block[4 * i]) << 24 | uint32_t(block[4 * i + 1]) << 16 |
++                   uint32_t(block[4 * i + 2]) << 8 | block[4 * i + 3];
++        for (unsigned i = 16; i < 80; ++i)
++            w[i] = rol(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
++        uint32_t a = state[0], b = state[1], c = state[2], d = state[3], e = state[4];
++        for (unsigned i = 0; i < 80; ++i) {
++            uint32_t f, k;
++            if (i < 20) {
++                f = (b & c) | (~b & d);
++                k = 0x5a827999u;
++            } else if (i < 40) {
++                f = b ^ c ^ d;
++                k = 0x6ed9eba1u;
++            } else if (i < 60) {
++                f = (b & c) | (b & d) | (c & d);
++                k = 0x8f1bbcdcu;
++            } else {
++                f = b ^ c ^ d;
++                k = 0xca62c1d6u;
++            }
++            uint32_t t = rol(a, 5) + f + e + k + w[i];
++            e = d;
++            d = c;
++            c = rol(b, 30);
++            b = a;
++            a = t;
++        }
++        state[0] += a;
++        state[1] += b;
++        state[2] += c;
++        state[3] += d;
++        state[4] += e;
++    }
++
++  public:
++    void update(const uint8_t *data, size_t n) {
++        length += uint64_t(n);
++        while (n) {
++            size_t take = n < 64 - used ? n : 64 - used;
++            memcpy(block + used, data, take);
++            used += take;
++            data += take;
++            n -= take;
++            if (used == 64) {
++                compress();
++                used = 0;
++            }
++        }
++    }
++    std::array<uint8_t, 20> digest() const {
++        GuestSha1 copy = *this;
++        uint64_t bits = length * 8;
++        const uint8_t marker = 0x80, zero = 0;
++        copy.update(&marker, 1);
++        while (copy.used != 56)
++            copy.update(&zero, 1);
++        uint8_t suffix[8];
++        for (unsigned i = 0; i < 8; ++i)
++            suffix[7 - i] = uint8_t(bits >> (8 * i));
++        copy.update(suffix, 8);
++        std::array<uint8_t, 20> result{};
++        for (unsigned i = 0; i < 20; ++i)
++            result[i] = uint8_t(copy.state[i / 4] >> (24 - 8 * (i % 4)));
++        return result;
++    }
++};

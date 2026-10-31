@@ -1,0 +1,39 @@
+diff --git a/tools/lazy_static.py b/tools/lazy_static.py
+index 2093566..e3dbfc1 100644
+--- a/tools/lazy_static.py
++++ b/tools/lazy_static.py
+@@ -52,6 +52,8 @@ def main(argv=None):
+     parser.add_argument("--preset", default="macos", help="which build tree to take the game's macros from")
+     parser.add_argument("--out", type=Path, default=None,
+                         help="the library to write (default beside the discovery file)")
++    parser.add_argument("--generated", type=Path,
++                        help="compile an existing reviewed module generation without retranslating")
+     args = parser.parse_args(argv)
+ 
+     game = args.game_dir.resolve()
+@@ -67,13 +69,18 @@ def main(argv=None):
+     if clang is None:
+         return "clang is not on PATH"
+ 
+-    stage = build_root / "recomp" / ("%s-gen" % args.name)
+-    shutil.rmtree(stage, ignore_errors=True)
+-    stage.mkdir(parents=True)
+-    translate = [sys.executable, str(ROOT / "tools/recomp/translate.py"), "--game", str(game),
+-                 "--out", str(stage), "--as-module", args.name, "--discovered", str(discovered)]
+-    if subprocess.run(translate, cwd=ROOT).returncode:
+-        return "the translation failed"
++    if args.generated:
++        stage = args.generated.resolve()
++        if not (stage / "table.c").is_file() or not (stage / "funcs.h").is_file() or not list(stage.glob("chunk_*.c")):
++            return "the supplied module generation is incomplete"
++    else:
++        stage = build_root / "recomp" / ("%s-gen" % args.name)
++        shutil.rmtree(stage, ignore_errors=True)
++        stage.mkdir(parents=True)
++        translate = [sys.executable, str(ROOT / "tools/recomp/translate.py"), "--game", str(game),
++                     "--out", str(stage), "--as-module", args.name, "--discovered", str(discovered)]
++        if subprocess.run(translate, cwd=ROOT).returncode:
++            return "the translation failed"
+ 
+     sources = sorted(stage.glob("chunk_*.c")) + [stage / "table.c"]
+     out = (args.out or discovered.with_suffix(
