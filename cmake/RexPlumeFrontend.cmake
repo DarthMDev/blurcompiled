@@ -1,5 +1,5 @@
 # Optional CPU frontend only. Never modifies or links the reference GPU plugin.
-set(BLUR_REX_SDK_SOURCE_DIR "${PROJECT_SOURCE_DIR}/local/x360-feasibility/internal-workspaces-20261025/blur-metal-candidate-20261026/sdk"
+set(BLUR_REX_SDK_SOURCE_DIR "${PROJECT_SOURCE_DIR}/local/metal-sdk/sdk"
   CACHE PATH "Reference SDK source for the Plume register mapper")
 file(READ "${PROJECT_SOURCE_DIR}/recomp/rex-plume-state-pin.json" _rex_state_pin)
 string(JSON _count LENGTH "${_rex_state_pin}" files)
@@ -18,6 +18,8 @@ foreach(i RANGE 0 ${_last})
 endforeach()
 add_library(blur-rex-plume-state STATIC recomp/native/rex_plume_state.cpp recomp/native/rex_plume_constants.cpp
   recomp/native/rex_plume_draw.cpp recomp/native/rex_plume_texture.cpp)
+set(BLUR_PLUME_FIXTURE_DIR "${PROJECT_SOURCE_DIR}/local/metal-fixtures" CACHE PATH "Locally generated game shader fixture directory")
+target_include_directories(blur-rex-plume-state BEFORE PUBLIC "${BLUR_PLUME_FIXTURE_DIR}")
 target_include_directories(blur-rex-plume-state PUBLIC src recomp/native)
 target_include_directories(blur-rex-plume-state SYSTEM PRIVATE "${BLUR_REX_SDK_SOURCE_DIR}/include"
   "${BLUR_REX_SDK_SOURCE_DIR}/thirdparty/simde" "${BLUR_SPIRV_CROSS_INCLUDE_DIR}")
@@ -39,6 +41,6 @@ add_test(NAME rex-ui-texture-contract COMMAND blur-rex-plume-texture-tests)
 add_executable(blur-rex-plume-active-tests tests/xbox/active_tests.cpp)
 target_link_libraries(blur-rex-plume-active-tests PRIVATE blur-rex-plume-state)
 add_test(NAME rex-ui-active-contract COMMAND blur-rex-plume-active-tests $<TARGET_FILE:blur-plume-bridge>)
-if(NOT EXISTS "${PROJECT_SOURCE_DIR}/recomp/native/rex_plume_embedded_shaders.hpp")
+if(NOT EXISTS "${BLUR_PLUME_FIXTURE_DIR}/rex_plume_embedded_shaders.hpp")
   message(FATAL_ERROR "The live SDK frontend needs a locally generated shader fixture header from your own game inputs. Captured game shaders are deliberately excluded from Git. See docs/DEVELOPMENT.md; leave BLUR_REX_PLUME_FRONTEND=OFF for public support targets.")
 endif()

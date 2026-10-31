@@ -1,0 +1,86 @@
+{
+  "executable_sha256": "8ad07d3ad05ef451444f63dfca7d93fd92b70127f641b85d82723140f039ac38",
+  "image_base": "0x82000000",
+  "evidence": "Decoded supported default.xex sections compared with run5 correspondence capture, native ARM64 ucode and translated SPIR-V. Vertex XOR masks normalize observed runtime fetch patching; they are a fixture-specific implementation, not a general recovered patch algorithm.",
+  "confidence": "High for these four captured shader variants only.",
+  "shaders": [
+    {
+      "name": "UiVs",
+      "stage": "vertex",
+      "rva": "0xc11530",
+      "word_count": 39,
+      "template_sha256": "9cf9d4b3f3001c6092f244af3ce1af5a20efe08c35836d52c8eca26b084df507",
+      "xor_words": {
+        "9": 671088640,
+        "10": 3750912,
+        "11": 6,
+        "13": 1074135170,
+        "14": 774,
+        "16": 1076178944,
+        "17": 1030
+      },
+      "ucode_sha256": "68dd0280d1d9a481653ab317818aa4c293adf50118acf9b0fdc9900bc97ae227",
+      "ucode_hash": "14725413759385260232",
+      "modification": "7",
+      "spirv_sha256": "e77b9b0228285837f7b86f0fd8aad7cc5c82c574d20ac43d948212d592ef898f",
+      "spirv_size": 11768
+    },
+    {
+      "name": "UiPs",
+      "stage": "pixel",
+      "rva": "0xc0cd0c",
+      "word_count": 36,
+      "template_sha256": "88f3eb71edf2c5dce6a0f2f290f0d606b298040d06130080c7ec82aadd9d2899",
+      "xor_words": {},
+      "ucode_sha256": "3a7fb09fbb214af6535d5494cccd93e26e5db4e2d66d505a3c0237e982c6de08",
+      "ucode_hash": "5761375762450317647",
+      "modification": "262151",
+      "spirv_sha256": "a67b801f0d3b45683d796b599781fa0174e55149458cd36f9b982c08e3005a13",
+      "spirv_size": 18232
+    },
+    {
+      "name": "CompositeVs",
+      "stage": "vertex",
+      "rva": "0xba3454",
+      "word_count": 24,
+      "template_sha256": "6438ef28dde5719ae809f1cb380fbe787e7d37a815e7c32320ef2521a5bacb73",
+      "xor_words": {
+        "9": 402653184,
+        "10": 2437120,
+        "11": 4,
+        "13": 1076178944,
+        "14": 516
+      },
+      "ucode_sha256": "790d2a99bf9320b6c9ffc6f43e940c5699e3af43d396a971ff679e8474397c31",
+      "ucode_hash": "10113577208428871413",
+      "modification": "1",
+      "spirv_sha256": "4c6429b012d34ca9406886f3cc419e008b101d12af81e33afec2b4c26df64315",
+      "spirv_size": 8984
+    },
+    {
+      "name": "CompositePs",
+      "stage": "pixel",
+      "rva": "0xc5efc4",
+      "word_count": 21,
+      "template_sha256": "e3554b5994dad7d2e671828f1be7096b4f078ea2964bbe446f0277dfc49c1e75",
+      "xor_words": {},
+      "ucode_sha256": "e120c099b707c96dee28b8c22ec7f32defa8a70a8565a6aa294a74c4e48bc8ab",
+      "ucode_hash": "1830864609340421704",
+      "modification": "70368744177665",
+      "spirv_sha256": "d95daf40fc979139cd8f74d6b002d46cbfca60342d9f453b9c86aca60ad1263e",
+      "spirv_size": 15808
+    }
+  ],
+  "msaa_flags": 3,
+  "translation_profile": {
+    "spirv_version": "1.5",
+    "max_storage_buffer_range": 4294967295,
+    "all_features": true,
+    "cull_distance": false,
+    "denorm_flush_to_zero_float32": false,
+    "native_2x_msaa_attachments": true,
+    "native_2x_msaa_no_attachments": true,
+    "edram_fragment_interlock": false,
+    "verification": "All four SPIR-V SHA-256 values reproduced byte-for-byte by CPU translation from normalized executable templates."
+  }
+}

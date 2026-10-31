@@ -1,7 +1,7 @@
 #pragma once
 #include "render/plume_bridge.h"
 #include "rex_plume_draw.hpp"
-#include "rex_plume_embedded_shaders.hpp"
+#include <rex_plume_embedded_shaders.hpp>
 #if __has_include(<rex/logging.h>)
 #include <rex/logging.h>
 #else

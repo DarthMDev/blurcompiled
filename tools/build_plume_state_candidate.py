@@ -115,7 +115,11 @@ def main():
                         help="Patch an isolated SPIR-V translator object and select that backend")
     parser.add_argument("--resolve-pitch-trial", action="store_true",
                         help="Enable the bounded fullscreen source-pitch diagnostic trial")
+    parser.add_argument("--fixture-dir", type=Path, default=root/"local/metal-fixtures",
+                        help="Verified local shader fixture directory")
     args=parser.parse_args();output=args.output.resolve()
+    if not (args.fixture_dir / "rex_plume_embedded_shaders.hpp").is_file():
+        raise SystemExit("Generate local shader fixtures first, or supply --fixture-dir")
     if output.exists():raise SystemExit("Output already exists; refusing to overwrite a checkpoint")
     reference=root/"local/x360-feasibility/internal-workspaces-20261025/blur-metal-candidate-20261026"
     sdk=reference/"sdk";build=reference/"build";runtime=reference/"capture-v2/runtime"
@@ -199,98 +203,14 @@ REXCVAR_DEFINE_BOOL(blur_resolve_pitch_trial, false, "GPU",
     REXLOG_WARN("Blur isolated diagnostic: enabling experimental SPIRV-Cross backend");
   }
 ''')
-    # The pinned Metal updater memset-clears this buffer but omits both
-    # index limits. Complete them from current registers, matching Vulkan.
-    index_anchor = "  consts.vertex_base_index = regs.Get<reg::VGT_INDX_OFFSET>().indx_offset;\n"
-    if text.count(index_anchor) != 1:
-        raise SystemExit("SDK SPIR-V vertex index constant context changed")
-    index_patch = '''  static_assert(offsetof(SpirvShaderTranslator::SystemConstants, vertex_index_min) == 496);
-  static_assert(offsetof(SpirvShaderTranslator::SystemConstants, vertex_index_max) == 500);
-  blur::render::guest::complete_rex_spirv_index_limits(
-      {regs.values, blur::render::guest::rex_register_word_count},
-      {reinterpret_cast<uint8_t*>(&consts), sizeof(consts)});
-'''
-    text = text.replace(index_anchor, index_anchor + index_patch)
-    # Observe after copy-mode handling, before shader analysis. The bounded
-    # Plume draw hook below runs later, after SPIR-V constants are current.
-    anchor="  // Vertex shader analysis — use Shader* base type so both MSC and\n"
-    if text.count(anchor)!=1:raise SystemExit("SDK observer insertion context changed")
-    text='#include "rex_plume_observer.hpp"\n#include "rex_plume_active.hpp"\n'+text.replace(anchor,
-        "  blur::render::guest::observe_rex_plume_register_state({regs.values, blur::render::guest::rex_register_word_count});\n\n"+anchor)
-    # Instrument both backend branches. Runtime selection must be observed,
-    # never inferred from the existence of an IssueDrawMsl implementation.
-    draw_anchor = "  // Blend constants (fixed-function, same as MSC path).\n"
-    if text.count(draw_anchor) != 1:
-        raise SystemExit("SDK SPIRV-Cross draw anchor context changed")
-    draw_hook = '''  // Bounded Plume submission; retain the SDK draw until target/resource
-  // synchronization and complete pass coverage have been verified.
-  blur::render::guest::dispatch_rex_plume_draw(
-      vertex_shader, pixel_shader,
-      {regs.values, blur::render::guest::rex_register_word_count},
-      msl_vertex_shader->constant_register_map(),
-      msl_pixel_shader ? msl_pixel_shader->constant_register_map() : Shader::ConstantRegisterMap{},
-      {reinterpret_cast<const uint8_t*>(&spirv_system_constants_), sizeof(spirv_system_constants_)},
-      shared_memory_ ? shared_memory_->GetXboxRamBase() : nullptr,
-      swap_count_, current_draw_index_, "spirvcross");
-
-'''
-    text = text.replace(draw_anchor, draw_hook + draw_anchor)
-
-    msc_anchor = "    constexpr size_t kStageVertex = 0;\n"
-    if text.count(msc_anchor) != 1:
-        raise SystemExit("SDK MSC draw anchor context changed")
-    msc_hook = '''    UpdateSpirvSystemConstantValues(
-        primitive_processing_result, primitive_polygonal,
-        primitive_processing_result.line_loop_closing_index,
-        primitive_processing_result.host_shader_index_endian, viewport_info,
-        used_texture_mask, depth_control, normalized_color_mask);
-    blur::render::guest::dispatch_rex_plume_draw(
-        vertex_shader, pixel_shader,
-        {regs.values, blur::render::guest::rex_register_word_count},
-        vertex_shader->constant_register_map(),
-        pixel_shader ? pixel_shader->constant_register_map() : Shader::ConstantRegisterMap{},
-        {reinterpret_cast<const uint8_t*>(&spirv_system_constants_), sizeof(spirv_system_constants_)},
-        shared_memory_ ? shared_memory_->GetXboxRamBase() : nullptr,
-        swap_count_, current_draw_index_, "msc");
-
-'''
-    text = text.replace(msc_anchor, msc_hook + msc_anchor)
-
-    copy_anchor="  MarkResolvedMemory(written_address, written_length);\n"
-    if text.count(copy_anchor)!=1:raise SystemExit("SDK copy anchor context changed")
-    copy_hook='''  uint8_t* guest_ram_ptr = shared_memory_ ? const_cast<uint8_t*>(shared_memory_->GetXboxRamBase()) : nullptr;
-  if (register_file_) {
-    blur::render::guest::handle_rex_plume_copy(
-        register_file_->values[XE_GPU_REG_RB_COPY_DEST_INFO],
-        register_file_->values[XE_GPU_REG_RB_COPY_CONTROL] & 0x7,
-        1280u, 720u, 720u, 0u, {},
-        guest_ram_ptr, written_address);
-  }
-'''
-    text=text.replace(copy_anchor,copy_anchor+copy_hook)
-
-    swap_anchor="  ++swap_count_;\n"
-    if text.count(swap_anchor)!=1:raise SystemExit("SDK swap anchor context changed")
-    swap_hook="  ++swap_count_;\n  blur::render::guest::handle_rex_plume_swap();\n"
-    text=text.replace(swap_anchor,swap_hook)
-
-    present_anchor="      ui::metal_runtime::MetalPresenter* metal_presenter = presenter;\n"
-    if text.count(present_anchor)!=1:raise SystemExit("SDK present anchor context changed")
-    present_hook='''      if (!blur::render::guest::get_rex_plume_runtime().swap_source_linear.empty()) {
-        const auto& pl_pixels = blur::render::guest::get_rex_plume_runtime().swap_source_linear;
-        if (source_texture->width() >= 1280 && source_texture->height() >= 720 && pl_pixels.size() >= 1280 * 720 * 4) {
-          source_texture->replaceRegion(MTL::Region::Make2D(0, 0, 1280, 720), 0, pl_pixels.data(), 1280 * 4);
-        }
-      }
-      ui::metal_runtime::MetalPresenter* metal_presenter = presenter;
-'''
-    text=text.replace(present_anchor,present_hook)
+    from instrument_metal import instrument
+    text = instrument(text)
     output.mkdir(parents=True);(output/"source").mkdir();(output/"runtime").mkdir()
     new_source=output/"source/metal_command_processor.cpp";new_source.write_text(text)
     new_object=output/"metal_command_processor.cpp.o"
     compile_args=[str(new_source) if a==str(source) else str(new_object) if a==object_name else
                   str(new_object)+".d" if a==object_name+".d" else a for a in compile_args]
-    compile_args[1:1]=["-I"+str(root/"src"),"-I"+str(root/"recomp/native"),"-I"+str(source.parent)]
+    compile_args[1:1]=["-I"+str(args.fixture_dir.resolve()),"-I"+str(root/"src"),"-I"+str(root/"recomp/native"),"-I"+str(source.parent)]
     compile_args = use_textual_prefix_header(compile_args, output/"source")
     new_plugin=output/"runtime/librexgpu-xenos.dylib"
     link_args=[str(new_plugin) if a==str(original_plugin) else str(new_object) if a==object_name else a for a in link_args]

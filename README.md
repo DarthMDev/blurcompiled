@@ -25,7 +25,7 @@ assets, generated game translations, or captured game shader binaries.
 | Windows and Linux | Ports needed; contributors welcome |
 | Online multiplayer | Not implemented or verified |
 | Discord Rich Presence | Planned; no live integration |
-| Public game build | Reproducible setup from user-supplied game files still needed |
+| Public game build | Source recipe builds Metal + bounded Plume integration from user-supplied game files on Apple Silicon |
 
 The current displayed game frame uses the SDK Metal backend. Plume is being
 integrated incrementally; it does not yet render the complete game frame.
@@ -45,11 +45,12 @@ an Xbox input verifier, a pinned public ReXGlue SDK installer, analysis override
 for one verified executable, and a native host project. Game files and generated
 translations stay on your machine in ignored local workspaces.
 
-The game build path is validated through native executable compilation and a
-headless `--help` smoke test on **macOS / Apple Silicon**. Gameplay for this
-public-SDK build has not yet been validated.
-Windows and Linux game ports are still open milestones. The public SDK build
-uses the SDK renderer; full Plume frame replacement remains separate work.
+The native Metal + Plume path is validated through source SDK/compiler builds,
+local shader reconstruction, executable compilation and a title-screen launch on
+**macOS / Apple Silicon**. Live Plume UI submissions are confirmed. The known
+dark/red scene remains; full Plume scene/resolve handoff and race validation are
+still open. The guide also retains a stock Vulkan/MoltenVK SDK comparison path.
+Windows and Linux game ports remain open milestones.
 
 For portable CPU contract tests (no game, SDK or graphics driver needed):
 
@@ -69,7 +70,7 @@ For the optional native Metal renderer and bridge, see
 - [x] Validate bounded native Plume rendering and bridge slices.
 - [ ] Fix scene graphics and verify render-target/shader correctness.
 - [ ] Complete Plume scene, resource, composite and resolve integration.
-- [x] Build an Apple Silicon executable from user-supplied inputs and the pinned public SDK.
+- [x] Build the Apple Silicon Metal/Plume executable from pinned sources and user-supplied game inputs.
 - [ ] Validate an offline race, controls, audio, saves and stability.
 - [ ] Bring up Windows and Linux builds and platform CI.
 - [ ] Research and implement online multiplayer compatibility.

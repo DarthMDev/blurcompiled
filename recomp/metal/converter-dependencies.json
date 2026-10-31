@@ -1,0 +1,30 @@
+[
+  {
+    "name": "dxc",
+    "repo": "wmarti/DirectXShaderCompiler",
+    "commit": "81dc4d1865d74f31bd2302b4fcc5a8ca29f2ba99",
+    "archive": "https://codeload.github.com/wmarti/DirectXShaderCompiler/tar.gz/81dc4d1865d74f31bd2302b4fcc5a8ca29f2ba99",
+    "archive_sha256": "d57ed896267bed4f44dc41bee29bb059f7b019d4cf2e03e6de343e7b7f76e894"
+  },
+  {
+    "name": "metal-cpp",
+    "repo": "wmarti/metal-cpp",
+    "commit": "13a670136712be815f7e386a470eafac7971d702",
+    "archive": "https://codeload.github.com/wmarti/metal-cpp/tar.gz/13a670136712be815f7e386a470eafac7971d702",
+    "archive_sha256": "f512a540d2062af03c7f14812e97b41d2590ffc08ddeae193915ea4bce04d0a2"
+  },
+  {
+    "name": "spirv-cross",
+    "repo": "KhronosGroup/SPIRV-Cross",
+    "commit": "a0fba56c34a6700f1724bf9b751da5b488a3775c",
+    "archive": "https://codeload.github.com/KhronosGroup/SPIRV-Cross/tar.gz/a0fba56c34a6700f1724bf9b751da5b488a3775c",
+    "archive_sha256": "1e79592b0a498ffb854f7d71e0d5811fcedb87a25201644bbf5dbba438e01264"
+  },
+  {
+    "name": "directx-headers",
+    "repo": "microsoft/DirectX-Headers",
+    "commit": "33374754f65baac0500dda6187e371136357246f",
+    "archive": "https://codeload.github.com/microsoft/DirectX-Headers/tar.gz/33374754f65baac0500dda6187e371136357246f",
+    "archive_sha256": "f2815fd9ea9571d271596576b56292fcccc9b18e83a013e88e7722a671425f05"
+  }
+]

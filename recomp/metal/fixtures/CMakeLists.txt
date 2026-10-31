@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.25)
+project(BlurFixtureExtraction LANGUAGES CXX)
+find_package(rexglue CONFIG REQUIRED)
+add_executable(blur-extract-shader extract.cpp)
+target_compile_features(blur-extract-shader PRIVATE cxx_std_23)
+target_link_libraries(blur-extract-shader PRIVATE rex::runtime)

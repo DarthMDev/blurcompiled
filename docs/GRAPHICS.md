@@ -30,11 +30,15 @@ Avoid promoting symptom-suppressing overrides without a correct reference.
 - `recomp/native/rex_plume_active.hpp`: active submission and resolve hooks.
 - `src/render/guest_draw.cpp`: bounded native rendering.
 - `src/render/plume_bridge.*`: versioned host API and submission validation.
-- `tools/build_plume_state_candidate.py`: maintainer instrumentation builder.
+- `recomp/metal/`: public SDK patch, dependency pins and local shader recipe.
+- `tools/instrument_metal.py`: shared live-hook source transformation.
+- `tools/build_plume_state_candidate.py`: legacy maintainer experiment builder.
 
-The public SDK game build and the instrumented Metal candidate are distinct
-configurations. Plume support tests do not prove that Plume produced a complete
-game frame. Start with measured intermediate data before changing formats or
+Reproduce this issue with the [native Metal + Plume build](BUILD_GAME.md#native-metal--plume-game-build).
+It now builds the SDK and active hooks from source with your own game inputs.
+The stock public SDK Vulkan/MoltenVK path is a separate comparison configuration
+and shows different artifacts. Plume support tests and accepted UI submissions
+do not establish that Plume produced the complete game frame. Start with measured intermediate data before changing formats or
 turning an experimental override on by default.
 
 For a graphics PR, identify the exact backend and input hash, show the original

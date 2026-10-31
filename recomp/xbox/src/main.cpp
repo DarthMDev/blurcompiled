@@ -2,11 +2,21 @@
 #include "generated/default/blur_x360_init.h"
 #include <rex/rex_app.h>
 #include <cstdio>
+#if defined(BLURCOMPILED_NATIVE_METAL)
+#include <rex/system/gpu_plugin.h>
+#include <stdexcept>
+#endif
 #include <string_view>
 
 class BlurCompiledApp : public rex::ReXApp {
  public:
   using rex::ReXApp::ReXApp;
+#if defined(BLURCOMPILED_NATIVE_METAL)
+  void OnPreSetup(rex::RuntimeConfig& config) override {
+    config.graphics = rex::system::LoadGpuPlugin("xenos", "metal");
+    if (!config.graphics) throw std::runtime_error("BlurCompiled native Metal backend unavailable");
+  }
+#endif
   static std::unique_ptr<rex::ui::WindowedApp> Create(rex::ui::WindowedAppContext& ctx) {
     return std::unique_ptr<BlurCompiledApp>(new BlurCompiledApp(ctx, "blur_x360", PPCImageConfig));
   }

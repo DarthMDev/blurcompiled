@@ -23,16 +23,19 @@ ctest --test-dir build-plume --output-on-failure
 
 These targets build the native renderer, guest packet contracts, replay and
 bridge hosts. They do not replace the entire game's graphics backend.
-`BLUR_REX_PLUME_FRONTEND=ON` additionally needs the pinned SDK source and a locally
-generated `recomp/native/rex_plume_embedded_shaders.hpp`. That captured game
-fixture is ignored. Until its input-generation recipe is complete, leave the
-live frontend option OFF in a fresh clone.
+For the **game's native Metal backend with live Plume hooks**, use the
+[Metal game recipe](BUILD_GAME.md#native-metal--plume-game-build). It builds the
+patched SDK from pinned source and reconstructs shader fixtures from your game.
+For a standalone frontend build, set `BLUR_REX_PLUME_FRONTEND=ON`,
+`BLUR_REX_SDK_SOURCE_DIR` to that SDK and `BLUR_PLUME_FIXTURE_DIR` to the generated
+fixture directory. All fixtures stay ignored and local.
 
 ## Source layout
 
 - `src/render/`: Plume renderer, packet contracts, replay interfaces and bridge.
 - `recomp/native/`: Xbox register/constant/resource adapters and diagnostic policy.
 - `recomp/xbox/`: game build inputs, analysis overrides and native host template.
+- `recomp/metal/`: pinned SDK patch, compiler pins and fixture reconstruction metadata.
 - `recomp/*-pin.json`: reproducible dependency and SDK pins.
 - `tests/`: synthetic Xbox preparation, capture normalization and C++ contracts.
 - `tools/`: SDK setup, user-input preparation and graphics diagnostics.
@@ -53,7 +56,8 @@ normal local filesystem for contributor checkouts.
 | Location | What it protects |
 | --- | --- |
 | `tests/test_prepare_xbox_game.py` | Input hash checks, separate output workspace, preserving original game files |
-| `tests/test_setup_rexglue.py` | SDK archive digest and safe extraction |
+| `tests/test_setup_rexglue.py`, `test_setup_metal.py` | SDK archive digests, safe source extraction and symlink boundaries |
+| `tests/test_metal_fixtures.py` | Synthetic endian conversion, normalization and hash rejection |
 | `tests/test_plume_ui_capture.py` | Synthetic capture normalization and completeness checks |
 | `tests/render/packet_tests.cpp`, `frontend_tests.cpp` | Packet format and portable frontend contracts |
 | `tests/render/renderer_tests.cpp` | Renderer state, resource lifecycle and optional real GPU checks |
