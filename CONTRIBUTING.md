@@ -66,5 +66,5 @@ Never publish credentials, authentication tokens or private account traffic.
 
 Entire trails can help explain decisions and failed experiments. Review exactly
 what will be uploaded; keep game data, private paths and secrets out of published
-trails. See [publishing](docs/PUBLISHING.md). Human-readable PR descriptions and
-reproducible evidence remain necessary.
+trails. Agent hook/session folders stay local and ignored. Clear PR descriptions
+and reproducible evidence remain necessary.

@@ -12,7 +12,7 @@ You must supply your own game files. Do not submit game executables, extracted
 assets, generated game translations, or captured game shader binaries.
 
 [Contributing](CONTRIBUTING.md) · [Milestones](docs/ROADMAP.md) ·
-[Build and architecture](docs/DEVELOPMENT.md) · [Graphics help wanted](docs/GRAPHICS.md)
+[Build the game](docs/BUILD_GAME.md) · [Development](docs/DEVELOPMENT.md) · [Graphics help wanted](docs/GRAPHICS.md)
 
 ## What works, and what needs help
 
@@ -29,7 +29,6 @@ assets, generated game translations, or captured game shader binaries.
 
 The current displayed game frame uses the SDK Metal backend. Plume is being
 integrated incrementally; it does not yet render the complete game frame.
-The older PC binary reconstruction is historical work, not the current target.
 
 ## Help wanted
 
@@ -41,24 +40,28 @@ online-service research, and Discord integration are also useful contributions.
 
 ## Building from source
 
-The checked-in CMake project builds support libraries, diagnostic hosts and tests.
-It **does not yet build the complete game from a fresh clone**. The working game
-candidate currently depends on an ignored local ReXGlue workspace and generated
-translation outputs. Making that pipeline reproducible is an explicit milestone.
+Start with [the game build guide](docs/BUILD_GAME.md). The repository now contains
+an Xbox input verifier, a pinned public ReXGlue SDK installer, analysis overrides
+for one verified executable, and a native host project. Game files and generated
+translations stay on your machine in ignored local workspaces.
 
-For the baseline support targets, install CMake 3.24+, a C++20 compiler, Python 3,
-SDL3 3.2+, and zlib, then run:
+The game build path is validated through native executable compilation and a
+headless `--help` smoke test on **macOS / Apple Silicon**. Gameplay for this
+public-SDK build has not yet been validated.
+Windows and Linux game ports are still open milestones. The public SDK build
+uses the SDK renderer; full Plume frame replacement remains separate work.
+
+For portable CPU contract tests (no game, SDK or graphics driver needed):
 
 ```sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake -S . -B build -DBLUR_PLUME_RENDERER=OFF
 cmake --build build --parallel
 python3 -m unittest discover -s tests -v
 ctest --test-dir build --output-on-failure
 ```
 
-See [development setup](docs/DEVELOPMENT.md) for the optional macOS Plume targets
-and the remaining local-workspace limitations. No ready-to-play download is
-provided here.
+For the optional native Metal renderer and bridge, see
+[development setup](docs/DEVELOPMENT.md).
 
 ## Milestones
 
@@ -66,7 +69,7 @@ provided here.
 - [x] Validate bounded native Plume rendering and bridge slices.
 - [ ] Fix scene graphics and verify render-target/shader correctness.
 - [ ] Complete Plume scene, resource, composite and resolve integration.
-- [ ] Publish a reproducible game build using user-supplied inputs.
+- [x] Build an Apple Silicon executable from user-supplied inputs and the pinned public SDK.
 - [ ] Validate an offline race, controls, audio, saves and stability.
 - [ ] Bring up Windows and Linux builds and platform CI.
 - [ ] Research and implement online multiplayer compatibility.
@@ -88,8 +91,7 @@ respect privacy, and work without requiring a multiplayer connection.
 
 ## Project notes and credits
 
-[Documentation index](docs/README.md) · [Tool guide](tools/README.md) ·
-[Publishing and development trails](docs/PUBLISHING.md)
+[Documentation index](docs/README.md) · [Tool guide](tools/README.md)
 
 Built around the work of the ReXGlue, Xenia and Plume communities. Dependency pins
 and their upstream locations are recorded under `recomp/`. Their licenses remain

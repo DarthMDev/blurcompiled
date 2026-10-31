@@ -17,9 +17,6 @@ No rights in Blur, its executable, assets or captured shaders are granted here.
 - ReXGlue / Xenia: SDK dependencies are external local inputs. Existing upstream
   copyright and BSD notices remain applicable to source adapted from them.
   `recomp/rex-plume-state-pin.json` identifies the SDK files used by adapters.
-- recomp-kit: earlier PC tooling and patch experiments refer to the MIT-licensed
-  upstream pinned in `recomp/kit-pin.json`. Preserved upstream license/notice text
-  is under `docs/licenses/` when supplied by the local pinned checkout.
 - SDL3 and zlib are external dependencies; retain their upstream license terms
   when distributing them. The optional movie viewer uses separately installed
   FFmpeg libraries; comply with the licenses of the actual FFmpeg configuration.

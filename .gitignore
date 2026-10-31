@@ -1,36 +1,38 @@
-/build*/
-/local/
-/reports/
-/reference/
-/extracted/
-/recomp/build/
-__pycache__/
+# Local inputs, generated translations, reports and build outputs.
+/local
+/reports
+/build*
+/reference
+/extracted
+/recomp/build
+__pycache__
+.pytest_cache
 *.pyc
 .DS_Store
+.env
+.env.*
+
+# Original game material and compiled artifacts never enter source commits.
+*.xex
+*.iso
 *.exe
 *.dll
+*.dylib
+*.so
+*.a
+*.o
+*.pch
 *.asi
 *.pak
 *.bik
 *.luac
 *.level*
 *.sig
-
-# Local caches and private session settings
-.pytest_cache/
-.entire/settings.local.json
-.env
-.env.*
-*.xex
-*.iso
 *.xcp
 *.dmp
-
-# Match directory entries even on volumes with unreliable d_type metadata
-/local
-/reports
-/build*
-/.pytest_cache
-/docs/history/PC_RESEARCH_README.md
-# Captured game shader payload: local input, never repository source.
 /recomp/native/rex_plume_embedded_shaders.hpp
+
+# Share hook definitions only; keep agent state and Entire data local.
+/.codex/*
+!/.codex/hooks.json
+/.entire

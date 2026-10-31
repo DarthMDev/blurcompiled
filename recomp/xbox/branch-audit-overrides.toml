@@ -1,0 +1,8 @@
+[functions]
+# Executable SHA256: 8ad07d3ad05ef451444f63dfca7d93fd92b70127f641b85d82723140f039ac38; RVA: 0x3FAF70; evidence: recovered branch-audit-overrides.toml; confidence: prior audit, packaging not a new disassembly audit.
+0x823FAF70 = { size = 8 }
+# Executable SHA256: 8ad07d3ad05ef451444f63dfca7d93fd92b70127f641b85d82723140f039ac38; RVA: 0xAF46A8; evidence: recovered branch-audit-overrides.toml; confidence: prior audit, packaging not a new disassembly audit.
+0x82AF46A8 = { size = 20 }
+
+# Executable SHA256: 8ad07d3ad05ef451444f63dfca7d93fd92b70127f641b85d82723140f039ac38; RVA: 0x4796B0; evidence: recovered branch-audit-overrides.toml; confidence: prior audit, packaging not a new disassembly audit.
+0x824796B0 = { end = 0x824796F8 }

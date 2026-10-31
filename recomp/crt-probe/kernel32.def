@@ -1,8 +1,0 @@
-LIBRARY KERNEL32.dll
-EXPORTS
-GetStdHandle@4
-WriteFile@20
-LoadLibraryA@4
-GetProcAddress@8
-FreeLibrary@4
-ExitProcess@4

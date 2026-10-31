@@ -1,0 +1,25 @@
+{
+  "project": "blur_x360",
+  "executable": "default.xex",
+  "executable_sha256": "8ad07d3ad05ef451444f63dfca7d93fd92b70127f641b85d82723140f039ac38",
+  "executable_size": 13905920,
+  "image_base": "0x82000000",
+  "sdk_repository": "https://github.com/rexglue/rexglue-sdk",
+  "sdk_source_revision": "f5337cdc947ff6d4c4196737e2c807a48f2a1fc2",
+  "sdk_cli_version": "0.10.0",
+  "overrides": [
+    {
+      "file": "branch-audit-overrides.toml",
+      "recovered_sha256": "54d93c3bc1ff02bceeeadd05eceae64874d455a361e1a3ef26ff548e0a9c87f1"
+    },
+    {
+      "file": "vtable-entry-overrides.toml",
+      "recovered_sha256": "417dbf9b35a4ba20579ebc4702d46985ae4006bf74b10e863c173327eddcd025"
+    },
+    {
+      "file": "vtable-entry-overrides-r2.toml",
+      "recovered_sha256": "35621e07d3d5b65342649ea1c0e1bcb4f05207aba6970eb3e7a945c61fa3633c"
+    }
+  ],
+  "evidence": "Recovered prior Xbox manifest and analysis override files from verified local recovery archive; no executable or generated translation distributed."
+}

@@ -1,0 +1,21 @@
+[functions]
+# Executable SHA256: 8ad07d3ad05ef451444f63dfca7d93fd92b70127f641b85d82723140f039ac38; RVA: 0x1DFAB8; evidence: recovered vtable-entry-overrides.toml; confidence: prior audit, packaging not a new disassembly audit.
+0x821DFAB8 = { size = 8 }
+# Executable SHA256: 8ad07d3ad05ef451444f63dfca7d93fd92b70127f641b85d82723140f039ac38; RVA: 0x2AB4F8; evidence: recovered vtable-entry-overrides.toml; confidence: prior audit, packaging not a new disassembly audit.
+0x822AB4F8 = { size = 8 }
+# Executable SHA256: 8ad07d3ad05ef451444f63dfca7d93fd92b70127f641b85d82723140f039ac38; RVA: 0x2ED1E8; evidence: recovered vtable-entry-overrides.toml; confidence: prior audit, packaging not a new disassembly audit.
+0x822ED1E8 = { size = 4 }
+# Executable SHA256: 8ad07d3ad05ef451444f63dfca7d93fd92b70127f641b85d82723140f039ac38; RVA: 0x30D3E0; evidence: recovered vtable-entry-overrides.toml; confidence: prior audit, packaging not a new disassembly audit.
+0x8230D3E0 = { size = 8 }
+# Executable SHA256: 8ad07d3ad05ef451444f63dfca7d93fd92b70127f641b85d82723140f039ac38; RVA: 0x30D3E8; evidence: recovered vtable-entry-overrides.toml; confidence: prior audit, packaging not a new disassembly audit.
+0x8230D3E8 = { size = 8 }
+# Executable SHA256: 8ad07d3ad05ef451444f63dfca7d93fd92b70127f641b85d82723140f039ac38; RVA: 0x33BE58; evidence: recovered vtable-entry-overrides.toml; confidence: prior audit, packaging not a new disassembly audit.
+0x8233BE58 = { size = 8 }
+# Executable SHA256: 8ad07d3ad05ef451444f63dfca7d93fd92b70127f641b85d82723140f039ac38; RVA: 0x574130; evidence: recovered vtable-entry-overrides.toml; confidence: prior audit, packaging not a new disassembly audit.
+0x82574130 = { size = 12 }
+# Executable SHA256: 8ad07d3ad05ef451444f63dfca7d93fd92b70127f641b85d82723140f039ac38; RVA: 0x5742E8; evidence: recovered vtable-entry-overrides.toml; confidence: prior audit, packaging not a new disassembly audit.
+0x825742E8 = { size = 16 }
+# Executable SHA256: 8ad07d3ad05ef451444f63dfca7d93fd92b70127f641b85d82723140f039ac38; RVA: 0x5742F8; evidence: recovered vtable-entry-overrides.toml; confidence: prior audit, packaging not a new disassembly audit.
+0x825742F8 = { size = 16 }
+# Executable SHA256: 8ad07d3ad05ef451444f63dfca7d93fd92b70127f641b85d82723140f039ac38; RVA: 0x611868; evidence: recovered vtable-entry-overrides.toml; confidence: prior audit, packaging not a new disassembly audit.
+0x82611868 = { size = 12 }

@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/rexglue/rexglue-sdk",
+  "version": "0.10.0",
+  "platform": "mac-arm64",
+  "archive": "https://github.com/rexglue/rexglue-sdk/releases/download/v0.10.0/rexglue-sdk-0.10.0-mac-arm64.zip",
+  "archive_sha256": "1192638b51a6963aa6a4f24b77ebcb90c16f7fd0b91b311e11a90100f5274326",
+  "archive_bytes": 69059624,
+  "verification_source": "GitHub release asset digest for v0.10.0, retrieved 2026-10-31",
+  "source_revision": "f5337cdc947ff6d4c4196737e2c807a48f2a1fc2"
+}

@@ -21,13 +21,21 @@ These are observations, not proof that the untested parts are correct. The next
 useful probe is scene HDR color/format before and after resolve and compositing.
 Avoid promoting symptom-suppressing overrides without a correct reference.
 
-## Where to start
+## Source map
 
-- [SDK frontend and candidate records](PLUME_REX_FRONTEND.md)
-- [Plume host bridge](PLUME_HOST_BRIDGE.md)
-- [Xbox UI adapter](PLUME_X360_ADAPTER.md)
-- [Xenia issue research](XENIA_BLUR_GRAPHICS_LEADS_2026-10-30.md)
-- [Plume/Xerenge research](PLUME_XERENGE_RESEARCH_2026-10-30.md)
+- `recomp/native/rex_plume_state.*`: Xbox register state mapping.
+- `recomp/native/rex_plume_constants.*`: shader constant packing.
+- `recomp/native/rex_plume_draw.*`: draw eligibility and packet assembly.
+- `recomp/native/rex_plume_texture.*`: guest texture ranges and decoding.
+- `recomp/native/rex_plume_active.hpp`: active submission and resolve hooks.
+- `src/render/guest_draw.cpp`: bounded native rendering.
+- `src/render/plume_bridge.*`: versioned host API and submission validation.
+- `tools/build_plume_state_candidate.py`: maintainer instrumentation builder.
+
+The public SDK game build and the instrumented Metal candidate are distinct
+configurations. Plume support tests do not prove that Plume produced a complete
+game frame. Start with measured intermediate data before changing formats or
+turning an experimental override on by default.
 
 For a graphics PR, identify the exact backend and input hash, show the original
 and resulting scene, explain the resource/shader state involved, and include a
