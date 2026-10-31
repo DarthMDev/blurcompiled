@@ -89,6 +89,13 @@ an endpoint alone does not implement authentication or matchmaking.
 Discord Rich Presence is a separate planned integration. It should be optional,
 respect privacy, and work without requiring a multiplayer connection.
 
+## AI usage
+
+AI coding tools were used during development of this project.
+Builds and focused tests are validated as documented. Graphics and gameplay
+accuracy are still being worked on; full equivalence to original Xbox 360
+hardware has not yet been verified.
+
 ## Project notes and credits
 
 [Documentation index](docs/README.md) · [Tool guide](tools/README.md)
