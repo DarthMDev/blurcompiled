@@ -45,5 +45,19 @@ ran with one skip. Captured game shader fixtures are excluded from Git, so the
 live frontend is intentionally not enabled in a fresh-clone support build.
 
 Entire Codex hooks are configured locally without historical imports. The CLI
-reports that hook approval through `/hooks` is still needed. Session uploads
-remain disabled until the destination is authenticated and trails are reviewed.
+reports that hook approval through `/hooks` is still needed. Future checkpoint uploads are configured for the private `entire` remote.
+Hook approval is still required before relying on automatic capture; no historical
+chats were imported. Review trails before publishing them.
+
+## Publication destinations and local volume limitation
+
+The initial source baseline was pushed and verified at both destinations above.
+GitHub is public; the Entire repository is private. The source history is the
+same at both remotes. No past conversation history was imported into Entire.
+
+The original development volume reports directories as regular files to Git.
+Ordinary staging and branch enumeration are unreliable there. The initial push
+therefore used an audited file manifest and identical verified Git objects on
+APFS. Contributors should clone onto a filesystem with correct directory
+metadata. Do not interpret a clean or incomplete status on the original volume
+as proof that every source change has been staged.
