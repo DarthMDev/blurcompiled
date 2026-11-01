@@ -4,9 +4,12 @@ An experimental native recompilation of the **Xbox 360 version of Blur**, using
 ReXGlue for the guest runtime and **Plume** for the native graphics integration.
 The current development platform is **macOS on Apple Silicon**.
 
-**The local recomp launches and runs. Graphics still need fixing.** The title/menu
-has persistent dark/red scene rendering. Complete race correctness and stability
-have not been established. This is a development project, not a finished release.
+**The local recomp launches and runs.** The 3D scene (car geometry, wet road
+reflections, background architecture, and UI) is now rendering with correct color
+ordering and geometry following fixes to EDRAM tiling ownership, SPIR-V fetch exponent
+bias, and resolve pitch promotion. Background exposure and post-processing tone-mapping
+tuning remain in progress. Complete race correctness and stability have not been
+established. This is a development project, not a finished release.
 
 You must supply your own game files. Do not submit game executables, extracted
 assets, generated game translations, or captured game shader binaries.
@@ -21,7 +24,7 @@ assets, generated game translations, or captured game shader binaries.
 | Xbox 360 recomp runtime | Launches and reaches the title/menu in the local development setup |
 | macOS / Apple Silicon | Current development and validation platform |
 | Plume | Verified bounded UI/composite rendering slices and live bridge integration; full scene/resource/resolve handoff incomplete |
-| Graphics | Dark/red scene remains; highest priority |
+| Graphics | 3D scene geometry, EDRAM resolves, and color rendering resolved; background exposure & tone mapping in progress |
 | Windows and Linux | Ports needed; contributors welcome |
 | Online multiplayer | Not implemented or verified |
 | Discord Rich Presence | Planned; no live integration |
@@ -47,9 +50,9 @@ translations stay on your machine in ignored local workspaces.
 
 The native Metal + Plume path is validated through source SDK/compiler builds,
 local shader reconstruction, executable compilation and a title-screen launch on
-**macOS / Apple Silicon**. Live Plume UI submissions are confirmed. The known
-dark/red scene remains; full Plume scene/resolve handoff and race validation are
-still open. The guide also retains a stock Vulkan/MoltenVK SDK comparison path.
+**macOS / Apple Silicon**. Live Plume UI submissions are confirmed. 3D scene
+geometry and color resolves are restored; background exposure tuning, full Plume
+scene/resolve handoff, and race validation are still open. The guide also retains a stock Vulkan/MoltenVK SDK comparison path.
 Windows and Linux game ports remain open milestones.
 
 For portable CPU contract tests (no game, SDK or graphics driver needed):

@@ -1,25 +1,36 @@
-# Graphics: help wanted
+# Graphics: status and investigations
 
-The local Xbox 360 recomp reaches the title/menu, but the car/ground are dark/red.
+The local Xbox 360 recomp reaches the title/menu, with the 3D car geometry, wheels,
+wet ground reflections, background architecture, and UI now rendering cleanly.
 The full displayed frame currently uses the SDK Metal backend. Plume supports
 bounded rendering slices; full resource synchronization and frame handoff remain
-incomplete. A complete offline race has not been validated.
+active work items.
 
-## Verified investigations
+## Verified investigations & root cause fixes
 
-- Resolve synchronization alone did not fix the scene.
+- **EDRAM ownership clobbering resolved**: Blur splits 720p 4x MSAA rendering into
+  3 vertical slices. In depth-only clear draws, `RenderTargetCache::Update()` wrapped
+  around EDRAM, reassigning base 0 from color target `00D10000` to depth target `00710400`.
+  Subsequent color resolves dumped depth data into EDRAM, yielding zero-filled intermediate
+  HDR buffers. Fixed by capping single-target update extents to `(kEdramTileCount - rt_base)`
+  and filtering resolve dump rectangles by target type.
+- **SPIR-V texture result exponent bias corrected**: In `spirv_translator_fetch.cpp`,
+  exponent adjustment was mistakenly read from word 4 (bits 13:18), overlapping `lod_bias`.
+  Textures specifying negative LOD bias (such as cubemaps and ambient textures) were
+  attenuated by $2^{-8}$ to $2^{-31}$. Fixed by loading word 3 bits 13:18 matching DXBC.
+- **Resolve pitch clamping resolved**: Fullscreen resolves following quarter-resolution
+  passes retained surface pitch 320, causing `draw.cpp` to clamp resolve width to 320 px.
+  Fixed by promoting surface pitch to destination copy pitch for 1X fullscreen resolves.
+- **HDR buffer validation**: Inspection of raw 64bpp float intermediate `038_0DDAE000.bin`
+  confirms the full 3D environment (skyscrapers, illuminated window grids, trees, tunnel
+  arch, and car) is rendered by the geometry pipeline.
+- **Remaining item**: Background exposure and tone-mapping curve tuning in post-processing
+  passes (where background float values near $0.0039$ get clamped to black in the final
+  presentation resolve).
 - Shared monotonically increasing bridge submission IDs fixed repeated UI
-  submission failures; hundreds of UI draws now succeed.
-- A SPIR-V texture exponent correction was exercised on the experimental
-  SPIRV-Cross path; the scene remained dark/red.
-- A bounded 320→1280 source-pitch override removed resolve mismatch warnings;
-  the scene remained dark/red. The override stays opt-in.
+  submission failures; UI draws succeed.
 - Plume HDR composite remains deferred without a synchronized scene preload;
-  live Plume MSAA and terminal resolve handoff are incomplete.
-
-These are observations, not proof that the untested parts are correct. The next
-useful probe is scene HDR color/format before and after resolve and compositing.
-Avoid promoting symptom-suppressing overrides without a correct reference.
+  live Plume MSAA and terminal resolve handoff are in progress.
 
 ## Source map
 
