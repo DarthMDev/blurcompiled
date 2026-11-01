@@ -4,7 +4,7 @@
   "archive": "https://api.github.com/repos/rexglue/rexglue-sdk/tarball/f5337cdc947ff6d4c4196737e2c807a48f2a1fc2",
   "archive_sha256": "912d1af9e74a4a50e68c6cd178bf6407a046c41bc173db12e7bf97883223d747",
   "patch": "recomp/metal/sdk.patch",
-  "patch_sha256": "48168f9d7e23855f1c07f7b7818c2a20e4a33606a019c8c01118cd8c67c4b271",
+  "patch_sha256": "83a0507ffe83892be1c98812a8e6e660f3898ea22d5ffb1935e2978c76d206d6",
   "files": {
     "CMakeLists.txt": "e123cba237bb80306d4a2b8c70888fb902e7529571f9613a80c102b5d4b7d046",
     "cmake/rex_version.cmake": "820839756046cf2fe3dc63a6151eca533e93e0dbca8b1d3346ef8572de200a4a",
@@ -39,7 +39,7 @@
     "include/rex/graphics/metal_runtime/metal_graphics_system.h": "d4ed62683896b465d16b37e9fe80adb5cccff9d04fe6c131395c5cc56dad7f17",
     "include/rex/graphics/metal_runtime/metal_heap_pool.h": "3a29117312d3be20626814b1a6c684f5230e4280456a187c554e1658063378bc",
     "include/rex/graphics/metal_runtime/metal_primitive_processor.h": "eb2a52c65b310ca4e19f80268dae8ec4d4195e7b2ca769225880a7168ec7581c",
-    "include/rex/graphics/metal_runtime/metal_render_target_cache.h": "71c49ebe43062b91f501d673385bdd9b19a0627810c6cce0be855d85dff3c297",
+    "include/rex/graphics/metal_runtime/metal_render_target_cache.h": "95ee1e662e42005e5c188ba84bf051f8bc2e60380ee81795f5346792fd26bc73",
     "include/rex/graphics/metal_runtime/metal_shader.h": "c7bea3530c5f1d753e4fae680bd1d9f06f366d053618f206ca756a24280c7ded",
     "include/rex/graphics/metal_runtime/metal_shader_cache.h": "9ffb9a4244294159bb745b0c751784436d1853e5e320dd261afe142942e4af91",
     "include/rex/graphics/metal_runtime/metal_shader_converter.h": "adc9a5ba23925ad2ed6469e213fb7754a0b83557d3bcf927308323421f8514b0",
@@ -98,7 +98,7 @@
     "src/graphics/metal_runtime/metal_graphics_system.cpp": "3e8817985ebf3ca3d01b55e8da2e74a25144613cc6113a022fe985b4e2601170",
     "src/graphics/metal_runtime/metal_heap_pool.cpp": "7dc41d874494d6464d9a92b02f7a636236ab474b3ba645f12b858732fca2f2c7",
     "src/graphics/metal_runtime/metal_primitive_processor.cpp": "0de208378eb4b126739ace2fe09864ec131cbcf606d6135c290bdad456bf9139",
-    "src/graphics/metal_runtime/metal_render_target_cache.cpp": "4c8993df5288efe444bc11ebd3a933923dfd33068f7a54b6c060ec546f313ccf",
+    "src/graphics/metal_runtime/metal_render_target_cache.cpp": "4c12aed9cc06dbf6b87fb36dd56d342d9df41a9ada8c8fe079de5db6f9782196",
     "src/graphics/metal_runtime/metal_shader.cpp": "1f0e38c2ac19cc1e25176136abb95b3ab0e76924f18116d59c959ea367f326a4",
     "src/graphics/metal_runtime/metal_shader_cache.cpp": "8403a2d413ca1ba5019a86077541683614be7169873b4198681276ae5811fcb9",
     "src/graphics/metal_runtime/metal_shader_converter.cpp": "00b702946d60b7e7ce6611398513e66e582224938c4aedcbacde869f6cb4cc19",
@@ -109,7 +109,7 @@
     "src/graphics/pipeline/shader/dxbc_translator.cpp": "9f203dddee28a6cb08cbf1ade6dcba6c61673449d760e68e31545fabe08b6e0c",
     "src/graphics/pipeline/texture/cache.cpp": "a62b8e24388a5bbb02de54b84edf3d6d875ad95cc6596f9de109de26c9fb51a4",
     "src/graphics/plugin_main.cpp": "868910f4552e898abad4eab56805212e763698e5e40f8816f969498767eaab75",
-    "src/graphics/util/draw.cpp": "ea2638c3ff863c7d674f9dcffc555500537ea38a6c3c8aadb8d4f5ee1e06dc3e",
+    "src/graphics/util/draw.cpp": "7c6117e1a1f011e8d69e97881870e3b3190b8d294d3b3bf4a423c9380b4a6091",
     "src/graphics/vulkan/command_processor.cpp": "0de7047c252f3eca95405199e537767b7417417153e1dee6bc69d983dacba048",
     "src/graphics/vulkan/deferred_command_buffer.cpp": "b90c6b605affac5b6dfbf0bbe9a90e854c1dad711d3eaa4344a2a273e955babf",
     "src/graphics/vulkan/pipeline_cache.cpp": "a892d47f973310dd45e37e12296e94673afa8890cb66f826b18894145f2bfb43",
@@ -245,7 +245,10 @@
     "src/ui/metal_runtime/metal_provider.cpp": "511d5b046ae10b288df6783733ef28168d736e61ce949f3d8b6b442191b8880a",
     "src/ui/metal_runtime/metal_util.cpp": "a59285a28675e38751fb5f345f1ab75924e7ec26b0bc2aaf52ec79c829f03f22",
     "src/ui/vulkan/vulkan_presenter.cpp": "ba49cc1c9ca81aaaef0593251500096c5e4de92921d74d4df06f588c78d44669",
-    "thirdparty/CMakeLists.txt": "5855d8e0ffd9a4f55d6a44bcf219ec0d7707783f4e4a9fd4456d57b280fb68bc"
+    "thirdparty/CMakeLists.txt": "5855d8e0ffd9a4f55d6a44bcf219ec0d7707783f4e4a9fd4456d57b280fb68bc",
+    "include/rex/graphics/pipeline/render_target/cache.h": "060be8f5c94bfcbe34598208980cae772cc2dc70bd059c20520c11ade26e9014",
+    "src/graphics/pipeline/render_target/cache.cpp": "6d7119e1d766b28a18dd38b4340b8ef70b4d52468b6a1247628813ced86ceb4a",
+    "src/graphics/pipeline/shader/spirv_translator_fetch.cpp": "6e90928578b8a1d602bc6325dfaae30e0b4121a94b6a271caf1a2e386dea1100"
   },
   "scope": "SDK Metal backend and existing diagnostics, portable source only. No game code, captures, binaries, private host project, or fixed capture output path.",
   "public_runtime_dependencies": {

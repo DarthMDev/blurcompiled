@@ -1,23 +1,25 @@
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
-@@ -30,6 +30,10 @@
- if(REXGLUE_ENABLE_PERF_COUNTERS)
+diff -Naur -x .* -x build -x thirdparty -x out a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt	2026-08-21 18:10:13
++++ b/CMakeLists.txt	2026-10-31 07:26:26
+@@ -31,6 +31,10 @@
      add_compile_definitions($<$<NOT:$<CONFIG:Release>>:REXGLUE_ENABLE_PERF_COUNTERS>)
  endif()
-+
+ 
 +option(REXGLUE_USE_METAL "Enable the native Metal game backend (macOS)" OFF)
 +
 +option(REXGLUE_BUILD_METAL_SHADER_TOOLS "Build experimental native Metal shader conversion tools (macOS only)" OFF)
- 
++
  # Graphics backend selection
  # D3D12: Windows only, ON by default.
+ # Vulkan: Cross-platform, ON by default on Linux, OFF by default on Windows.
 @@ -296,3 +300,4 @@
      set(REXGLUE_SHARE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/ui")
      include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/rexglue_helpers.cmake)
  endif()
 +
---- a/cmake/rex_version.cmake
-+++ b/cmake/rex_version.cmake
+diff -Naur -x .* -x build -x thirdparty -x out a/cmake/rex_version.cmake b/cmake/rex_version.cmake
+--- a/cmake/rex_version.cmake	2026-08-21 18:10:13
++++ b/cmake/rex_version.cmake	2026-10-31 07:26:26
 @@ -113,60 +113,6 @@
          set(ARG_SOURCE_DIR "${CMAKE_SOURCE_DIR}")
      endif()
@@ -80,8 +82,9 @@
 -        BRANCH_NAME "${branch_name}")
 -    set(${out_var} "${result}" PARENT_SCOPE)
  endfunction()
---- a/include/rex/graphics/command_processor.h
-+++ b/include/rex/graphics/command_processor.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/command_processor.h b/include/rex/graphics/command_processor.h
+--- a/include/rex/graphics/command_processor.h	2026-08-21 18:10:13
++++ b/include/rex/graphics/command_processor.h	2026-10-31 07:26:26
 @@ -165,6 +165,10 @@
    virtual void OnGammaRamp256EntryTableValueWritten() {}
    virtual void OnGammaRampPWLValueWritten() {}
@@ -93,8 +96,9 @@
    virtual void MakeCoherent();
    virtual void PrepareForWait();
    virtual void ReturnFromWait();
---- /dev/null
-+++ b/include/rex/graphics/consumption_trace.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/consumption_trace.h b/include/rex/graphics/consumption_trace.h
+--- a/include/rex/graphics/consumption_trace.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/consumption_trace.h	2026-10-31 07:26:26
 @@ -0,0 +1,44 @@
 +#pragma once
 +// New diagnostic implementation. CPU-side recording only, never GPU completion.
@@ -140,8 +144,9 @@
 +}
 +
 +}
---- /dev/null
-+++ b/include/rex/graphics/correspondence_capture.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/correspondence_capture.h b/include/rex/graphics/correspondence_capture.h
+--- a/include/rex/graphics/correspondence_capture.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/correspondence_capture.h	2026-10-31 07:26:26
 @@ -0,0 +1,73 @@
 +#pragma once
 +// Diagnostic transaction only. Owned by the command-processing thread.
@@ -216,8 +221,9 @@
 +  }();return t;
 +}
 +}
---- /dev/null
-+++ b/include/rex/graphics/draw_provenance.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/draw_provenance.h b/include/rex/graphics/draw_provenance.h
+--- a/include/rex/graphics/draw_provenance.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/draw_provenance.h	2026-10-31 07:26:26
 @@ -0,0 +1,81 @@
 +#pragma once
 +// Diagnostic recorded-command provenance, not proof of per-draw GPU completion.
@@ -300,8 +306,9 @@
 +inline Recorder& Get() { static thread_local Recorder recorder; return recorder; }
 +inline thread_local unsigned stage = 0;
 +}  // namespace rex::graphics::draw_provenance
---- /dev/null
-+++ b/include/rex/graphics/metal/command_processor.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal/command_processor.h b/include/rex/graphics/metal/command_processor.h
+--- a/include/rex/graphics/metal/command_processor.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal/command_processor.h	2026-10-31 07:26:26
 @@ -0,0 +1,38 @@
 +#pragma once
 +#include <rex/graphics/command_processor.h>
@@ -341,8 +348,9 @@
 +  bool Fail(std::string error);
 +};
 +}  // namespace rex::graphics::metal
---- /dev/null
-+++ b/include/rex/graphics/metal/dxbc_to_dxil_converter.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal/dxbc_to_dxil_converter.h b/include/rex/graphics/metal/dxbc_to_dxil_converter.h
+--- a/include/rex/graphics/metal/dxbc_to_dxil_converter.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal/dxbc_to_dxil_converter.h	2026-10-31 07:26:26
 @@ -0,0 +1,61 @@
 +/**
 + ******************************************************************************
@@ -405,8 +413,9 @@
 +}  // namespace rex::graphics::metal
 +
 +#endif  // DXBC_TO_DXIL_CONVERTER_H_
---- /dev/null
-+++ b/include/rex/graphics/metal/graphics_system.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal/graphics_system.h b/include/rex/graphics/metal/graphics_system.h
+--- a/include/rex/graphics/metal/graphics_system.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal/graphics_system.h	2026-10-31 07:26:26
 @@ -0,0 +1,16 @@
 +#pragma once
 +#include <rex/graphics/graphics_system.h>
@@ -424,8 +433,9 @@
 +  std::unique_ptr<CommandProcessor> CreateCommandProcessor() override;
 +};
 +}  // namespace rex::graphics::metal
---- /dev/null
-+++ b/include/rex/graphics/metal/metal_shader_converter.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal/metal_shader_converter.h b/include/rex/graphics/metal/metal_shader_converter.h
+--- a/include/rex/graphics/metal/metal_shader_converter.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal/metal_shader_converter.h	2026-10-31 07:26:26
 @@ -0,0 +1,134 @@
 +/**
 + ******************************************************************************
@@ -561,8 +571,9 @@
 +}  // namespace rex::graphics::metal
 +
 +#endif  // XENIA_GPU_METAL_METAL_SHADER_CONVERTER_H_
---- /dev/null
-+++ b/include/rex/graphics/metal/shared_memory.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal/shared_memory.h b/include/rex/graphics/metal/shared_memory.h
+--- a/include/rex/graphics/metal/shared_memory.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal/shared_memory.h	2026-10-31 07:26:26
 @@ -0,0 +1,33 @@
 +#pragma once
 +/**
@@ -597,15 +608,17 @@
 +  MTL::Buffer* buffer_ = nullptr;
 +};
 +}  // namespace rex::graphics::metal
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/autorelease.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/autorelease.h b/include/rex/graphics/metal_runtime/autorelease.h
+--- a/include/rex/graphics/metal_runtime/autorelease.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/autorelease.h	2026-10-31 07:26:26
 @@ -0,0 +1,4 @@
 +#pragma once
 +#include <Foundation/Foundation.hpp>
 +#include <Foundation/NSSharedPtr.hpp>
 +#define XE_SCOPED_AUTORELEASE_POOL(name) auto autorelease_pool = NS::TransferPtr(NS::AutoreleasePool::alloc()->init())
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/blur_capture.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/blur_capture.h b/include/rex/graphics/metal_runtime/blur_capture.h
+--- a/include/rex/graphics/metal_runtime/blur_capture.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/blur_capture.h	2026-10-31 07:26:26
 @@ -0,0 +1,108 @@
 +// New Blur diagnostic infrastructure; no recovered guest behavior.
 +#pragma once
@@ -715,8 +728,9 @@
 +  return session;
 +}
 +}  // namespace blur_metal_capture
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/compat.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/compat.h b/include/rex/graphics/metal_runtime/compat.h
+--- a/include/rex/graphics/metal_runtime/compat.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/compat.h	2026-10-31 07:26:26
 @@ -0,0 +1,9 @@
 +#pragma once
 +#include <rex/assert.h>
@@ -727,8 +741,9 @@
 +#include <xxhash.h>
 +#define SCOPE_profile_cpu_f(...) ((void)0)
 +namespace rex::graphics::metal_runtime { using Memory = rex::memory::Memory; }
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/adaptive_quad_hs.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/adaptive_quad_hs.h b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/adaptive_quad_hs.h
+--- a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/adaptive_quad_hs.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/adaptive_quad_hs.h	2026-10-31 07:26:26
 @@ -0,0 +1,398 @@
 +#if 0
 +//
@@ -1128,8 +1143,9 @@
 +    0,   0,   0,   0,   0,   1,   0,   0,   0,   3,   0,   0,   0,   4,   0,
 +    0,   0,   3,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 +    0,   0,   0};
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/adaptive_triangle_hs.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/adaptive_triangle_hs.h b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/adaptive_triangle_hs.h
+--- a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/adaptive_triangle_hs.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/adaptive_triangle_hs.h	2026-10-31 07:26:26
 @@ -0,0 +1,373 @@
 +#if 0
 +//
@@ -1504,8 +1520,9 @@
 +    0,   0,   0,   0,   0,   0,   0,   1,   0,   0,   0,   3,   0,   0,   0,
 +    4,   0,   0,   0,   2,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 +    0,   0,   0,   0,   0};
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_quad_1cp_hs.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_quad_1cp_hs.h b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_quad_1cp_hs.h
+--- a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_quad_1cp_hs.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_quad_1cp_hs.h	2026-10-31 07:26:26
 @@ -0,0 +1,363 @@
 +#if 0
 +//
@@ -1870,8 +1887,9 @@
 +    0,   0,   0,   1,   0,   0,   0,   3,   0,   0,   0,   4,   0,   0,   0,
 +    3,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 +    0};
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_quad_4cp_hs.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_quad_4cp_hs.h b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_quad_4cp_hs.h
+--- a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_quad_4cp_hs.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_quad_4cp_hs.h	2026-10-31 07:26:26
 @@ -0,0 +1,354 @@
 +#if 0
 +//
@@ -2227,8 +2245,9 @@
 +    0,   0,   0,   4,   0,   0,   0,   3,   0,   0,   0,   4,   0,   0,   0,
 +    3,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 +    0};
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_triangle_1cp_hs.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_triangle_1cp_hs.h b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_triangle_1cp_hs.h
+--- a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_triangle_1cp_hs.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_triangle_1cp_hs.h	2026-10-31 07:26:26
 @@ -0,0 +1,344 @@
 +#if 0
 +//
@@ -2574,8 +2593,9 @@
 +    0,   0,   0,   0,   0,   0,   0,   0,   0,   1,   0,   0,   0,   3,   0,
 +    0,   0,   4,   0,   0,   0,   2,   0,   0,   0,   0,   0,   0,   0,   0,
 +    0,   0,   0,   0,   0,   0,   0};
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_triangle_3cp_hs.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_triangle_3cp_hs.h b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_triangle_3cp_hs.h
+--- a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_triangle_3cp_hs.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/continuous_triangle_3cp_hs.h	2026-10-31 07:26:26
 @@ -0,0 +1,335 @@
 +#if 0
 +//
@@ -2912,8 +2932,9 @@
 +    0,   0,   0,   0,   0,   0,   0,   0,   0,   3,   0,   0,   0,   3,   0,
 +    0,   0,   4,   0,   0,   0,   2,   0,   0,   0,   0,   0,   0,   0,   0,
 +    0,   0,   0,   0,   0,   0,   0};
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_quad_1cp_hs.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_quad_1cp_hs.h b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_quad_1cp_hs.h
+--- a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_quad_1cp_hs.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_quad_1cp_hs.h	2026-10-31 07:26:26
 @@ -0,0 +1,363 @@
 +#if 0
 +//
@@ -3278,8 +3299,9 @@
 +    0,   0,   0,   1,   0,   0,   0,   3,   0,   0,   0,   1,   0,   0,   0,
 +    3,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 +    0};
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_quad_4cp_hs.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_quad_4cp_hs.h b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_quad_4cp_hs.h
+--- a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_quad_4cp_hs.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_quad_4cp_hs.h	2026-10-31 07:26:26
 @@ -0,0 +1,354 @@
 +#if 0
 +//
@@ -3635,8 +3657,9 @@
 +    0,   0,   0,   4,   0,   0,   0,   3,   0,   0,   0,   1,   0,   0,   0,
 +    3,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 +    0};
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_triangle_1cp_hs.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_triangle_1cp_hs.h b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_triangle_1cp_hs.h
+--- a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_triangle_1cp_hs.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_triangle_1cp_hs.h	2026-10-31 07:26:26
 @@ -0,0 +1,344 @@
 +#if 0
 +//
@@ -3982,8 +4005,9 @@
 +    0,   0,   0,   0,   0,   0,   0,   0,   0,   1,   0,   0,   0,   3,   0,
 +    0,   0,   1,   0,   0,   0,   2,   0,   0,   0,   0,   0,   0,   0,   0,
 +    0,   0,   0,   0,   0,   0,   0};
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_triangle_3cp_hs.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_triangle_3cp_hs.h b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_triangle_3cp_hs.h
+--- a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_triangle_3cp_hs.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/discrete_triangle_3cp_hs.h	2026-10-31 07:26:26
 @@ -0,0 +1,335 @@
 +#if 0
 +//
@@ -4320,8 +4344,9 @@
 +    0,   0,   0,   0,   0,   0,   0,   0,   0,   3,   0,   0,   0,   3,   0,
 +    0,   0,   1,   0,   0,   0,   2,   0,   0,   0,   0,   0,   0,   0,   0,
 +    0,   0,   0,   0,   0,   0,   0};
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/tessellation_adaptive_vs.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/tessellation_adaptive_vs.h b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/tessellation_adaptive_vs.h
+--- a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/tessellation_adaptive_vs.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/tessellation_adaptive_vs.h	2026-10-31 07:26:26
 @@ -0,0 +1,324 @@
 +#if 0
 +//
@@ -4647,8 +4672,9 @@
 +    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 +    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 +    0,   0};
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/tessellation_indexed_vs.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/tessellation_indexed_vs.h b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/tessellation_indexed_vs.h
+--- a/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/tessellation_indexed_vs.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/d3d12_5_1_bytecode/tessellation_indexed_vs.h	2026-10-31 07:26:26
 @@ -0,0 +1,329 @@
 +#if 0
 +//
@@ -4979,8 +5005,9 @@
 +    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 +    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
 +    0,   0,   0,   0,   0,   0,   0,   0,   0};
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/dxbc_to_dxil_converter.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/dxbc_to_dxil_converter.h b/include/rex/graphics/metal_runtime/dxbc_to_dxil_converter.h
+--- a/include/rex/graphics/metal_runtime/dxbc_to_dxil_converter.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/dxbc_to_dxil_converter.h	2026-10-31 07:26:26
 @@ -0,0 +1,65 @@
 +/**
 + ******************************************************************************
@@ -5047,8 +5074,9 @@
 +}  // namespace xe
 +
 +#endif  // DXBC_TO_DXIL_CONVERTER_H_
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/flags.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/flags.h b/include/rex/graphics/metal_runtime/flags.h
+--- a/include/rex/graphics/metal_runtime/flags.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/flags.h	2026-10-31 07:26:26
 @@ -0,0 +1,61 @@
 +#pragma once
 +#include <rex/graphics/flags.h>
@@ -5111,8 +5139,9 @@
 +REXCVAR_DECLARE(bool, metal_use_spirvcross);
 +
 +REXCVAR_DECLARE(int32_t, metal_draw_ring_count);
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/metal_command_processor.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/metal_command_processor.h b/include/rex/graphics/metal_runtime/metal_command_processor.h
+--- a/include/rex/graphics/metal_runtime/metal_command_processor.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/metal_command_processor.h	2026-10-31 07:26:26
 @@ -0,0 +1,818 @@
 +/**
 + ******************************************************************************
@@ -5932,8 +5961,9 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_GPU_METAL_METAL_COMMAND_PROCESSOR_H_
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/metal_geometry_shader.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/metal_geometry_shader.h b/include/rex/graphics/metal_runtime/metal_geometry_shader.h
+--- a/include/rex/graphics/metal_runtime/metal_geometry_shader.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/metal_geometry_shader.h	2026-10-31 07:26:26
 @@ -0,0 +1,70 @@
 +/**
 + ******************************************************************************
@@ -6005,8 +6035,9 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_GPU_METAL_METAL_GEOMETRY_SHADER_H_
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/metal_graphics_system.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/metal_graphics_system.h b/include/rex/graphics/metal_runtime/metal_graphics_system.h
+--- a/include/rex/graphics/metal_runtime/metal_graphics_system.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/metal_graphics_system.h	2026-10-31 07:26:26
 @@ -0,0 +1,12 @@
 +#pragma once
 +#include <rex/graphics/graphics_system.h>
@@ -6020,8 +6051,9 @@
 +  std::unique_ptr<CommandProcessor> CreateCommandProcessor() override;
 +};
 +}
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/metal_heap_pool.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/metal_heap_pool.h b/include/rex/graphics/metal_runtime/metal_heap_pool.h
+--- a/include/rex/graphics/metal_runtime/metal_heap_pool.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/metal_heap_pool.h	2026-10-31 07:26:26
 @@ -0,0 +1,53 @@
 +/**
 + ******************************************************************************
@@ -6076,8 +6108,9 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_GPU_METAL_METAL_HEAP_POOL_H_
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/metal_primitive_processor.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/metal_primitive_processor.h b/include/rex/graphics/metal_runtime/metal_primitive_processor.h
+--- a/include/rex/graphics/metal_runtime/metal_primitive_processor.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/metal_primitive_processor.h	2026-10-31 07:26:26
 @@ -0,0 +1,89 @@
 +/**
 + ******************************************************************************
@@ -6168,9 +6201,10 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_GPU_METAL_METAL_PRIMITIVE_PROCESSOR_H_
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/metal_render_target_cache.h
-@@ -0,0 +1,524 @@
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/metal_render_target_cache.h b/include/rex/graphics/metal_runtime/metal_render_target_cache.h
+--- a/include/rex/graphics/metal_runtime/metal_render_target_cache.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/metal_render_target_cache.h	2026-11-01 04:18:09
+@@ -0,0 +1,525 @@
 +/**
 + ******************************************************************************
 + * Xenia : Xbox 360 Emulator Research Project                                 *
@@ -6687,6 +6721,7 @@
 +  // ResolveInfo::GetCopyEdramTileSpan to edram_buffer_.
 +  void DumpRenderTargets(uint32_t dump_base, uint32_t dump_row_length_used,
 +                         uint32_t dump_rows, uint32_t dump_pitch,
++                         bool is_depth = false,
 +                         MTL::CommandBuffer* command_buffer = nullptr);
 +};
 +
@@ -6695,8 +6730,9 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_GPU_METAL_METAL_RENDER_TARGET_CACHE_H_
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/metal_shader.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/metal_shader.h b/include/rex/graphics/metal_runtime/metal_shader.h
+--- a/include/rex/graphics/metal_runtime/metal_shader.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/metal_shader.h	2026-10-31 07:26:26
 @@ -0,0 +1,127 @@
 +/**
 + ******************************************************************************
@@ -6825,8 +6861,9 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_GPU_METAL_METAL_SHADER_H_
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/metal_shader_cache.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/metal_shader_cache.h b/include/rex/graphics/metal_runtime/metal_shader_cache.h
+--- a/include/rex/graphics/metal_runtime/metal_shader_cache.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/metal_shader_cache.h	2026-10-31 07:26:26
 @@ -0,0 +1,81 @@
 +/**
 + ******************************************************************************
@@ -6909,8 +6946,9 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_GPU_METAL_METAL_SHADER_CACHE_H_
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/metal_shader_converter.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/metal_shader_converter.h b/include/rex/graphics/metal_runtime/metal_shader_converter.h
+--- a/include/rex/graphics/metal_runtime/metal_shader_converter.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/metal_shader_converter.h	2026-10-31 07:26:26
 @@ -0,0 +1,138 @@
 +/**
 + ******************************************************************************
@@ -7050,8 +7088,9 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_GPU_METAL_METAL_SHADER_CONVERTER_H_
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/metal_shared_memory.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/metal_shared_memory.h b/include/rex/graphics/metal_runtime/metal_shared_memory.h
+--- a/include/rex/graphics/metal_runtime/metal_shared_memory.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/metal_shared_memory.h	2026-10-31 07:26:26
 @@ -0,0 +1,60 @@
 +/**
 + ******************************************************************************
@@ -7113,8 +7152,9 @@
 +}  // namespace xe
 +
 +#endif
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/metal_texture_cache.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/metal_texture_cache.h b/include/rex/graphics/metal_runtime/metal_texture_cache.h
+--- a/include/rex/graphics/metal_runtime/metal_texture_cache.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/metal_texture_cache.h	2026-10-31 07:26:26
 @@ -0,0 +1,296 @@
 +/**
 + ******************************************************************************
@@ -7412,8 +7452,9 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_GPU_METAL_METAL_TEXTURE_CACHE_H_
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/msl_bindings.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/msl_bindings.h b/include/rex/graphics/metal_runtime/msl_bindings.h
+--- a/include/rex/graphics/metal_runtime/msl_bindings.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/msl_bindings.h	2026-10-31 07:26:26
 @@ -0,0 +1,76 @@
 +/**
 + ******************************************************************************
@@ -7491,8 +7532,9 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_GPU_METAL_MSL_BINDINGS_H_
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/msl_shader.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/msl_shader.h b/include/rex/graphics/metal_runtime/msl_shader.h
+--- a/include/rex/graphics/metal_runtime/msl_shader.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/msl_shader.h	2026-10-31 07:26:26
 @@ -0,0 +1,77 @@
 +/**
 + ******************************************************************************
@@ -7571,8 +7613,9 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_GPU_METAL_MSL_SHADER_H_
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/msl_tess_factor_kernels.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/msl_tess_factor_kernels.h b/include/rex/graphics/metal_runtime/msl_tess_factor_kernels.h
+--- a/include/rex/graphics/metal_runtime/msl_tess_factor_kernels.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/msl_tess_factor_kernels.h	2026-10-31 07:26:26
 @@ -0,0 +1,224 @@
 +/**
 + ******************************************************************************
@@ -7798,8 +7841,9 @@
 +)msl";
 +
 +#endif  // XENIA_GPU_METAL_MSL_TESS_FACTOR_KERNELS_H_
---- /dev/null
-+++ b/include/rex/graphics/metal_runtime/stb_image_write.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/metal_runtime/stb_image_write.h b/include/rex/graphics/metal_runtime/stb_image_write.h
+--- a/include/rex/graphics/metal_runtime/stb_image_write.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/metal_runtime/stb_image_write.h	2026-10-31 07:26:26
 @@ -0,0 +1,1724 @@
 +/* stb_image_write - v1.16 - public domain - http://nothings.org/stb
 +   writes out PNG/BMP/TGA/JPEG/HDR images to C stdio - Sean Barrett 2010-2015
@@ -9525,8 +9569,24 @@
 +WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 +------------------------------------------------------------------------------
 +*/
---- a/include/rex/graphics/pipeline/shader/dxbc_translator.h
-+++ b/include/rex/graphics/pipeline/shader/dxbc_translator.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/pipeline/render_target/cache.h b/include/rex/graphics/pipeline/render_target/cache.h
+--- a/include/rex/graphics/pipeline/render_target/cache.h	2026-08-21 18:10:13
++++ b/include/rex/graphics/pipeline/render_target/cache.h	2026-11-01 04:23:14
+@@ -548,6 +548,11 @@
+   // EDRAM memory are committed with a memory barrier.
+   void PixelShaderInterlockFullEdramBarrierPlaced();
+ 
++  const std::unordered_map<RenderTargetKey, RenderTarget*, RenderTargetKey::Hasher>&
++  render_targets() const {
++    return render_targets_;
++  }
++
+  private:
+   const RegisterFile& register_file_;
+   uint32_t draw_resolution_scale_x_;
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/pipeline/shader/dxbc_translator.h b/include/rex/graphics/pipeline/shader/dxbc_translator.h
+--- a/include/rex/graphics/pipeline/shader/dxbc_translator.h	2026-08-21 18:10:13
++++ b/include/rex/graphics/pipeline/shader/dxbc_translator.h	2026-10-31 07:26:26
 @@ -513,7 +513,8 @@
  
    // Creates a special pixel shader without color outputs - this resets the
@@ -9537,8 +9597,9 @@
  
    // Common functions useful not only for the translator, but also for render
    // target reinterpretation.
---- /dev/null
-+++ b/include/rex/graphics/vulkan/aux_msaa_spv.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/vulkan/aux_msaa_spv.h b/include/rex/graphics/vulkan/aux_msaa_spv.h
+--- a/include/rex/graphics/vulkan/aux_msaa_spv.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/vulkan/aux_msaa_spv.h	2026-10-31 07:26:26
 @@ -0,0 +1,64 @@
 +	// 1116.3.0
 +	 #pragma once
@@ -9604,8 +9665,9 @@
 +	0x00000022,0x0000004d,0x0000004b,0x0000004c,0x0003003e,0x00000024,0x0000004d,0x000200f9,
 +	0x00000026,0x000200f8,0x00000028,0x000100fd,0x00010038
 +};
---- a/include/rex/graphics/vulkan/command_processor.h
-+++ b/include/rex/graphics/vulkan/command_processor.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/vulkan/command_processor.h b/include/rex/graphics/vulkan/command_processor.h
+--- a/include/rex/graphics/vulkan/command_processor.h	2026-08-21 18:10:13
++++ b/include/rex/graphics/vulkan/command_processor.h	2026-10-31 07:26:26
 @@ -47,6 +47,7 @@
  
  class VulkanCommandProcessor : public CommandProcessor {
@@ -9614,8 +9676,9 @@
    // Single-descriptor layouts for use within a single frame.
    enum class SingleTransientDescriptorLayout {
      kStorageBufferCompute,
---- a/include/rex/graphics/vulkan/deferred_command_buffer.h
-+++ b/include/rex/graphics/vulkan/deferred_command_buffer.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/vulkan/deferred_command_buffer.h b/include/rex/graphics/vulkan/deferred_command_buffer.h
+--- a/include/rex/graphics/vulkan/deferred_command_buffer.h	2026-08-21 18:10:13
++++ b/include/rex/graphics/vulkan/deferred_command_buffer.h	2026-10-31 07:26:26
 @@ -210,6 +210,21 @@
                  regions, sizeof(VkBufferImageCopy) * region_count);
    }
@@ -9646,23 +9709,24 @@
      kVkCopyQueryPoolResults,
      kVkDispatch,
      kVkDraw,
-@@ -484,6 +500,14 @@
-     static_assert(alignof(VkBufferImageCopy) <= alignof(uintmax_t));
-   };
- 
+@@ -481,6 +497,14 @@
+     VkImageLayout dst_image_layout;
+     uint32_t region_count;
+     // Followed by aligned VkBufferImageCopy[].
++    static_assert(alignof(VkBufferImageCopy) <= alignof(uintmax_t));
++  };
++
 +  struct ArgsVkCopyImageToBuffer {
 +    VkImage src_image;
 +    VkImageLayout src_image_layout;
 +    VkBuffer dst_buffer;
 +    uint32_t region_count;
-+    static_assert(alignof(VkBufferImageCopy) <= alignof(uintmax_t));
-+  };
-+
-   struct ArgsVkCopyQueryPoolResults {
-     VkQueryPool query_pool;
-     uint32_t first_query;
---- /dev/null
-+++ b/include/rex/graphics/vulkan/pipeline_observer.h
+     static_assert(alignof(VkBufferImageCopy) <= alignof(uintmax_t));
+   };
+ 
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/vulkan/pipeline_observer.h b/include/rex/graphics/vulkan/pipeline_observer.h
+--- a/include/rex/graphics/vulkan/pipeline_observer.h	1969-12-31 19:00:00
++++ b/include/rex/graphics/vulkan/pipeline_observer.h	2026-10-31 07:26:26
 @@ -0,0 +1,25 @@
 +#pragma once
 +// Host diagnostic metadata only. Observe creation before publishing VkPipeline.
@@ -9689,8 +9753,9 @@
 +}
 +inline std::string Find(uint64_t handle){auto& r=Get();std::lock_guard<std::mutex> lock(r.mutex);auto i=r.fields.find(handle);return i==r.fields.end()?std::string():i->second;}
 +}
---- a/include/rex/graphics/vulkan/primitive_processor.h
-+++ b/include/rex/graphics/vulkan/primitive_processor.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/vulkan/primitive_processor.h b/include/rex/graphics/vulkan/primitive_processor.h
+--- a/include/rex/graphics/vulkan/primitive_processor.h	2026-08-21 18:10:13
++++ b/include/rex/graphics/vulkan/primitive_processor.h	2026-10-31 07:26:26
 @@ -39,6 +39,7 @@
    void EndSubmission();
    void EndFrame();
@@ -9699,8 +9764,9 @@
    std::pair<VkBuffer, VkDeviceSize> GetBuiltinIndexBuffer(size_t handle) const {
      assert_not_null(builtin_index_buffer_);
      return std::make_pair(builtin_index_buffer_,
---- a/include/rex/graphics/vulkan/render_target_cache.h
-+++ b/include/rex/graphics/vulkan/render_target_cache.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/vulkan/render_target_cache.h b/include/rex/graphics/vulkan/render_target_cache.h
+--- a/include/rex/graphics/vulkan/render_target_cache.h	2026-08-21 18:10:13
++++ b/include/rex/graphics/vulkan/render_target_cache.h	2026-10-31 07:26:26
 @@ -32,6 +32,8 @@
  
  class VulkanRenderTargetCache final : public RenderTargetCache {
@@ -9737,8 +9803,9 @@
    bool DumpRenderTargets(uint32_t dump_base, uint32_t dump_row_length_used, uint32_t dump_rows,
                           uint32_t dump_pitch);
  
---- a/include/rex/graphics/vulkan/texture_cache.h
-+++ b/include/rex/graphics/vulkan/texture_cache.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/graphics/vulkan/texture_cache.h b/include/rex/graphics/vulkan/texture_cache.h
+--- a/include/rex/graphics/vulkan/texture_cache.h	2026-08-21 18:10:13
++++ b/include/rex/graphics/vulkan/texture_cache.h	2026-10-31 07:26:26
 @@ -74,6 +74,9 @@
    }
  
@@ -9761,8 +9828,9 @@
    SamplerParameters GetSamplerParameters(const VulkanShader::SamplerBinding& binding) const;
  
    // Must be called for every used sampler at least once in a single submission,
---- a/include/rex/ui/imgui_dialog.h
-+++ b/include/rex/ui/imgui_dialog.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/ui/imgui_dialog.h b/include/rex/ui/imgui_dialog.h
+--- a/include/rex/ui/imgui_dialog.h	2026-08-21 18:10:13
++++ b/include/rex/ui/imgui_dialog.h	2026-10-31 07:26:26
 @@ -38,6 +38,8 @@
    void Then(rex::thread::Fence* fence);
  
@@ -9772,14 +9840,16 @@
  
   protected:
    ImGuiDialog(ImGuiDrawer* imgui_drawer);
---- /dev/null
-+++ b/include/rex/ui/metal/api.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/ui/metal/api.h b/include/rex/ui/metal/api.h
+--- a/include/rex/ui/metal/api.h	1969-12-31 19:00:00
++++ b/include/rex/ui/metal/api.h	2026-10-31 07:26:26
 @@ -0,0 +1,3 @@
 +#pragma once
 +// metal-cpp definitions live in src/ui/metal/api.cpp only.
 +#include <Metal/Metal.hpp>
---- /dev/null
-+++ b/include/rex/ui/metal/provider.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/ui/metal/provider.h b/include/rex/ui/metal/provider.h
+--- a/include/rex/ui/metal/provider.h	1969-12-31 19:00:00
++++ b/include/rex/ui/metal/provider.h	2026-10-31 07:26:26
 @@ -0,0 +1,31 @@
 +#pragma once
 +/**
@@ -9812,8 +9882,9 @@
 +  MTL::CommandQueue* command_queue_ = nullptr;
 +};
 +}  // namespace rex::ui::metal
---- /dev/null
-+++ b/include/rex/ui/metal/submission_tracker.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/ui/metal/submission_tracker.h b/include/rex/ui/metal/submission_tracker.h
+--- a/include/rex/ui/metal/submission_tracker.h	1969-12-31 19:00:00
++++ b/include/rex/ui/metal/submission_tracker.h	2026-10-31 07:26:26
 @@ -0,0 +1,50 @@
 +#pragma once
 +/**
@@ -9865,8 +9936,9 @@
 +  std::deque<Pending> pending_;
 +};
 +}  // namespace rex::ui::metal
---- /dev/null
-+++ b/include/rex/ui/metal_runtime/gpu_completion_timeline.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/ui/metal_runtime/gpu_completion_timeline.h b/include/rex/ui/metal_runtime/gpu_completion_timeline.h
+--- a/include/rex/ui/metal_runtime/gpu_completion_timeline.h	1969-12-31 19:00:00
++++ b/include/rex/ui/metal_runtime/gpu_completion_timeline.h	2026-10-31 07:26:26
 @@ -0,0 +1,101 @@
 +/**
 + ******************************************************************************
@@ -9969,8 +10041,9 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_UI_GPU_COMPLETION_TIMELINE_H_
---- /dev/null
-+++ b/include/rex/ui/metal_runtime/metal_api.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/ui/metal_runtime/metal_api.h b/include/rex/ui/metal_runtime/metal_api.h
+--- a/include/rex/ui/metal_runtime/metal_api.h	1969-12-31 19:00:00
++++ b/include/rex/ui/metal_runtime/metal_api.h	2026-10-31 07:26:26
 @@ -0,0 +1,30 @@
 +#include <rex/graphics/metal_runtime/flags.h>
 +/**
@@ -10002,8 +10075,9 @@
 +#endif  // METAL_SHADER_CONVERTER_AVAILABLE
 +
 +#endif
---- /dev/null
-+++ b/include/rex/ui/metal_runtime/metal_gpu_completion_timeline.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/ui/metal_runtime/metal_gpu_completion_timeline.h b/include/rex/ui/metal_runtime/metal_gpu_completion_timeline.h
+--- a/include/rex/ui/metal_runtime/metal_gpu_completion_timeline.h	1969-12-31 19:00:00
++++ b/include/rex/ui/metal_runtime/metal_gpu_completion_timeline.h	2026-10-31 07:26:26
 @@ -0,0 +1,63 @@
 +/**
 + ******************************************************************************
@@ -10068,8 +10142,9 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_UI_METAL_METAL_GPU_COMPLETION_TIMELINE_H_
---- /dev/null
-+++ b/include/rex/ui/metal_runtime/metal_immediate_drawer.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/ui/metal_runtime/metal_immediate_drawer.h b/include/rex/ui/metal_runtime/metal_immediate_drawer.h
+--- a/include/rex/ui/metal_runtime/metal_immediate_drawer.h	1969-12-31 19:00:00
++++ b/include/rex/ui/metal_runtime/metal_immediate_drawer.h	2026-10-31 07:26:26
 @@ -0,0 +1,87 @@
 +/**
 + ******************************************************************************
@@ -10158,8 +10233,9 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_UI_METAL_METAL_IMMEDIATE_DRAWER_H_
---- /dev/null
-+++ b/include/rex/ui/metal_runtime/metal_performance.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/ui/metal_runtime/metal_performance.h b/include/rex/ui/metal_runtime/metal_performance.h
+--- a/include/rex/ui/metal_runtime/metal_performance.h	1969-12-31 19:00:00
++++ b/include/rex/ui/metal_runtime/metal_performance.h	2026-10-31 07:26:26
 @@ -0,0 +1,238 @@
 +#ifndef XENIA_UI_METAL_METAL_PERFORMANCE_H_
 +#define XENIA_UI_METAL_METAL_PERFORMANCE_H_
@@ -10399,8 +10475,9 @@
 +}  // namespace rex::ui::metal
 +
 +#endif  // XENIA_UI_METAL_METAL_PERFORMANCE_H_
---- /dev/null
-+++ b/include/rex/ui/metal_runtime/metal_presenter.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/ui/metal_runtime/metal_presenter.h b/include/rex/ui/metal_runtime/metal_presenter.h
+--- a/include/rex/ui/metal_runtime/metal_presenter.h	1969-12-31 19:00:00
++++ b/include/rex/ui/metal_runtime/metal_presenter.h	2026-10-31 07:26:26
 @@ -0,0 +1,193 @@
 +/**
 + ******************************************************************************
@@ -10595,8 +10672,9 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_UI_METAL_METAL_PRESENTER_H_
---- /dev/null
-+++ b/include/rex/ui/metal_runtime/metal_provider.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/ui/metal_runtime/metal_provider.h b/include/rex/ui/metal_runtime/metal_provider.h
+--- a/include/rex/ui/metal_runtime/metal_provider.h	1969-12-31 19:00:00
++++ b/include/rex/ui/metal_runtime/metal_provider.h	2026-10-31 07:26:26
 @@ -0,0 +1,53 @@
 +/**
 + ******************************************************************************
@@ -10651,8 +10729,9 @@
 +}  // namespace xe
 +
 +#endif  // XENIA_UI_METAL_METAL_PROVIDER_H_
---- /dev/null
-+++ b/include/rex/ui/metal_runtime/metal_util.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/ui/metal_runtime/metal_util.h b/include/rex/ui/metal_runtime/metal_util.h
+--- a/include/rex/ui/metal_runtime/metal_util.h	1969-12-31 19:00:00
++++ b/include/rex/ui/metal_runtime/metal_util.h	2026-10-31 07:26:26
 @@ -0,0 +1,36 @@
 +/**
 + ******************************************************************************
@@ -10690,8 +10769,9 @@
 +}  // namespace xe
 +
 +#endif
---- a/include/rex/ui/overlay/debug_overlay.h
-+++ b/include/rex/ui/overlay/debug_overlay.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/ui/overlay/debug_overlay.h b/include/rex/ui/overlay/debug_overlay.h
+--- a/include/rex/ui/overlay/debug_overlay.h	2026-08-21 18:10:13
++++ b/include/rex/ui/overlay/debug_overlay.h	2026-10-31 07:26:26
 @@ -31,6 +31,7 @@
    ~DebugOverlayDialog();
  
@@ -10700,8 +10780,9 @@
  
   protected:
    void OnDraw(ImGuiIO& io) override;
---- a/include/rex/ui/vulkan/presenter.h
-+++ b/include/rex/ui/vulkan/presenter.h
+diff -Naur -x .* -x build -x thirdparty -x out a/include/rex/ui/vulkan/presenter.h b/include/rex/ui/vulkan/presenter.h
+--- a/include/rex/ui/vulkan/presenter.h	2026-08-21 18:10:13
++++ b/include/rex/ui/vulkan/presenter.h	2026-10-31 07:26:26
 @@ -129,6 +129,7 @@
    Surface::TypeFlags GetSupportedSurfaceTypes() const override;
  
@@ -10710,8 +10791,9 @@
  
    void AwaitUISubmissionCompletionFromUIThread(uint64_t submission_index) {
      ui_submission_tracker_.AwaitSubmissionCompletion(submission_index);
---- a/src/graphics/CMakeLists.txt
-+++ b/src/graphics/CMakeLists.txt
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/CMakeLists.txt b/src/graphics/CMakeLists.txt
+--- a/src/graphics/CMakeLists.txt	2026-08-21 18:10:13
++++ b/src/graphics/CMakeLists.txt	2026-10-31 07:34:47
 @@ -30,6 +30,11 @@
      pipeline/shader/translator_disasm.cpp
  )
@@ -10766,10 +10848,11 @@
  # Everything PRIVATE: the plugin has no consumers. Never link the OBJECT
  # libraries (rexcore/rexui) here; rexruntime already contains those objects
  # and relinking them would duplicate global state.
-@@ -158,3 +173,12 @@
+@@ -157,4 +172,13 @@
+         dxgi
          dxguid
      )
- endif()
++endif()
 +
 +# Isolated first stage of the native Metal port; does not register a backend.
 +if(REXGLUE_BUILD_METAL_SHADER_TOOLS)
@@ -10778,9 +10861,10 @@
 +
 +if(REXGLUE_USE_METAL)
 +    add_subdirectory(metal_runtime)
-+endif()
---- a/src/graphics/command_processor.cpp
-+++ b/src/graphics/command_processor.cpp
+ endif()
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/command_processor.cpp b/src/graphics/command_processor.cpp
+--- a/src/graphics/command_processor.cpp	2026-08-21 18:10:13
++++ b/src/graphics/command_processor.cpp	2026-10-31 07:26:26
 @@ -912,6 +912,7 @@
  
  bool CommandProcessor::ExecutePacketType3_INTERRUPT(memory::RingBuffer* reader, uint32_t packet,
@@ -10821,8 +10905,9 @@
    // generate a VS|PS_done event
    uint32_t initiator = reader->ReadAndSwap<uint32_t>();
    uint32_t address = reader->ReadAndSwap<uint32_t>();
---- /dev/null
-+++ b/src/graphics/metal/CMakeLists.txt
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal/CMakeLists.txt b/src/graphics/metal/CMakeLists.txt
+--- a/src/graphics/metal/CMakeLists.txt	1969-12-31 19:00:00
++++ b/src/graphics/metal/CMakeLists.txt	2026-10-31 07:26:26
 @@ -0,0 +1,35 @@
 +# Experimental conversion boundary. Vulkan remains the selectable macOS backend.
 +if(NOT APPLE)
@@ -10859,8 +10944,9 @@
 +set_source_files_properties(library_check.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
 +target_link_libraries(rex-metal-shader-check PRIVATE "-framework Metal" "-framework Foundation")
 +target_link_libraries(rex-metal-shader-check PRIVATE rexmetal-shader xxHash::xxhash)
---- /dev/null
-+++ b/src/graphics/metal/command/CMakeLists.txt
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal/command/CMakeLists.txt b/src/graphics/metal/command/CMakeLists.txt
+--- a/src/graphics/metal/command/CMakeLists.txt	1969-12-31 19:00:00
++++ b/src/graphics/metal/command/CMakeLists.txt	2026-10-31 07:26:26
 @@ -0,0 +1,9 @@
 +# Offscreen guest PM4 draw subset. Does not alter the runtime plugin factory.
 +add_library(rexmetal-command STATIC
@@ -10871,8 +10957,9 @@
 +target_link_libraries(rexmetal-command PUBLIC rexmetal-memory rexmetal-shader PRIVATE xxHash::xxhash)
 +add_executable(rex-metal-draw-check draw_check.cpp)
 +target_link_libraries(rex-metal-draw-check PRIVATE rexmetal-command xxHash::xxhash)
---- /dev/null
-+++ b/src/graphics/metal/command/command_processor.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal/command/command_processor.cpp b/src/graphics/metal/command/command_processor.cpp
+--- a/src/graphics/metal/command/command_processor.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal/command/command_processor.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,533 @@
 +// Incremental offscreen adaptation of Xenia-Alloy's Metal command processor.
 +// Copyright 2026 Ben Vanik. BSD license; see SDK LICENSE.
@@ -11407,8 +11494,9 @@
 +  return true;
 +}
 +}  // namespace rex::graphics::metal
---- /dev/null
-+++ b/src/graphics/metal/command/draw_check.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal/command/draw_check.cpp b/src/graphics/metal/command/draw_check.cpp
+--- a/src/graphics/metal/command/draw_check.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal/command/draw_check.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,499 @@
 +// Real FM3 guest shaders, controlled vertex/constants fixture, SDK PM4 decoding.
 +#include <rex/graphics/metal/graphics_system.h>
@@ -11909,8 +11997,9 @@
 +  try { Run(argv[1], argv[2]); return 0; }
 +  catch (const std::exception& error) { std::fprintf(stderr, "Guest draw check failed: %s\n",error.what()); return 2; }
 +}
---- /dev/null
-+++ b/src/graphics/metal/command/graphics_system.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal/command/graphics_system.cpp b/src/graphics/metal/command/graphics_system.cpp
+--- a/src/graphics/metal/command/graphics_system.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal/command/graphics_system.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,27 @@
 +// Native Metal provider/setup adaptation for ReXGlue's split GPU setup API.
 +#include <rex/graphics/metal/graphics_system.h>
@@ -11939,8 +12028,9 @@
 +}
 +void MetalGraphicsSystem::Shutdown() { GraphicsSystem::Shutdown(); }
 +}  // namespace rex::graphics::metal
---- /dev/null
-+++ b/src/graphics/metal/command/ir_runtime.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal/command/ir_runtime.cpp b/src/graphics/metal/command/ir_runtime.cpp
+--- a/src/graphics/metal/command/ir_runtime.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal/command/ir_runtime.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,6 @@
 +// Adapted from Xenia-Alloy's metal_ir_runtime.cc.
 +// Copyright 2026 Ben Vanik. BSD license; see SDK LICENSE.
@@ -11948,8 +12038,9 @@
 +#define IR_RUNTIME_METALCPP
 +#define IR_PRIVATE_IMPLEMENTATION
 +#include <metal_irconverter_runtime.h>
---- /dev/null
-+++ b/src/graphics/metal/command/texture_cache.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal/command/texture_cache.cpp b/src/graphics/metal/command/texture_cache.cpp
+--- a/src/graphics/metal/command/texture_cache.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal/command/texture_cache.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,82 @@
 +// Resource binding subset adapted from Alloy's Metal texture-cache interfaces.
 +// Copyright 2026 Ben Vanik. BSD license; see SDK LICENSE.
@@ -12033,8 +12124,9 @@
 +  return sampler;
 +}
 +}  // namespace rex::graphics::metal
---- /dev/null
-+++ b/src/graphics/metal/command/texture_cache.h
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal/command/texture_cache.h b/src/graphics/metal/command/texture_cache.h
+--- a/src/graphics/metal/command/texture_cache.h	1969-12-31 19:00:00
++++ b/src/graphics/metal/command/texture_cache.h	2026-10-31 07:26:26
 @@ -0,0 +1,25 @@
 +#pragma once
 +#include <rex/graphics/metal/shared_memory.h>
@@ -12061,8 +12153,9 @@
 +  std::map<std::array<uint64_t, 5>, NS::SharedPtr<MTL::Texture>> textures_;
 +};
 +}  // namespace rex::graphics::metal
---- /dev/null
-+++ b/src/graphics/metal/dxbc_to_dxil_converter.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal/dxbc_to_dxil_converter.cpp b/src/graphics/metal/dxbc_to_dxil_converter.cpp
+--- a/src/graphics/metal/dxbc_to_dxil_converter.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal/dxbc_to_dxil_converter.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,229 @@
 +/**
 + ******************************************************************************
@@ -12293,8 +12386,9 @@
 +}
 +
 +}  // namespace rex::graphics::metal
---- /dev/null
-+++ b/src/graphics/metal/library_check.mm
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal/library_check.mm b/src/graphics/metal/library_check.mm
+--- a/src/graphics/metal/library_check.mm	1969-12-31 19:00:00
++++ b/src/graphics/metal/library_check.mm	2026-10-31 07:26:26
 @@ -0,0 +1,44 @@
 +// Verify generated libraries through the native Metal API without a window.
 +#import <Foundation/Foundation.h>
@@ -12340,8 +12434,9 @@
 +    return true;
 +  }
 +}
---- /dev/null
-+++ b/src/graphics/metal/metal_shader_converter.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal/metal_shader_converter.cpp b/src/graphics/metal/metal_shader_converter.cpp
+--- a/src/graphics/metal/metal_shader_converter.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal/metal_shader_converter.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,675 @@
 +/**
 + ******************************************************************************
@@ -13018,8 +13113,9 @@
 +}
 +
 +}  // namespace rex::graphics::metal
---- /dev/null
-+++ b/src/graphics/metal/shader_check.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal/shader_check.cpp b/src/graphics/metal/shader_check.cpp
+--- a/src/graphics/metal/shader_check.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal/shader_check.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,108 @@
 +// Offline native Metal conversion check for Xenia shareable guest shader caches.
 +// This does not initialize guest memory, run the game, or modify the input cache.
@@ -13129,8 +13225,9 @@
 +  std::printf("Native Metal shader conversion: %u passed, %u failed\n", passed, failed);
 +  return failed || !passed ? 7 : 0;
 +}
---- /dev/null
-+++ b/src/graphics/metal/shared_memory.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal/shared_memory.cpp b/src/graphics/metal/shared_memory.cpp
+--- a/src/graphics/metal/shared_memory.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal/shared_memory.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,57 @@
 +/**
 + * Adapted from Xenia-Alloy's metal_shared_memory.cc.
@@ -13189,8 +13286,9 @@
 +  return true;
 +}
 +}  // namespace rex::graphics::metal
---- /dev/null
-+++ b/src/graphics/metal/shared_memory_check.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal/shared_memory_check.cpp b/src/graphics/metal/shared_memory_check.cpp
+--- a/src/graphics/metal/shared_memory_check.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal/shared_memory_check.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,91 @@
 +// Checks watched guest uploads and an in-flight GPU/CPU overwrite boundary.
 +#include <rex/graphics/metal/shared_memory.h>
@@ -13283,8 +13381,9 @@
 +    return 1;
 +  }
 +}
---- /dev/null
-+++ b/src/graphics/metal/submission_check.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal/submission_check.cpp b/src/graphics/metal/submission_check.cpp
+--- a/src/graphics/metal/submission_check.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal/submission_check.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,113 @@
 +// Native GPU work through the provider and tracker, without guest/game startup.
 +#include <rex/ui/metal/provider.h>
@@ -13399,8 +13498,9 @@
 +    return 1;
 +  }
 +}
---- /dev/null
-+++ b/src/graphics/metal_runtime/CMakeLists.txt
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/CMakeLists.txt b/src/graphics/metal_runtime/CMakeLists.txt
+--- a/src/graphics/metal_runtime/CMakeLists.txt	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/CMakeLists.txt	2026-10-31 07:26:26
 @@ -0,0 +1,36 @@
 +# Full Alloy native Metal renderer adapted to ReXGlue.
 +if(NOT APPLE OR NOT REXGLUE_BUILD_METAL_SHADER_TOOLS)
@@ -13438,8 +13538,9 @@
 +    "${REXGLUE_METAL_DEPS_ROOT}/lib/libmetalirconverter.dylib"
 +    "-framework Metal" "-framework MetalKit" "-framework MetalFX" "-framework QuartzCore" "-framework Cocoa")
 +
---- /dev/null
-+++ b/src/graphics/metal_runtime/blur_capture_gpu.h
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/blur_capture_gpu.h b/src/graphics/metal_runtime/blur_capture_gpu.h
+--- a/src/graphics/metal_runtime/blur_capture_gpu.h	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/blur_capture_gpu.h	2026-10-31 07:26:26
 @@ -0,0 +1,75 @@
 +// New bounded diagnostic readback; shared by runtime and synthetic GPU check.
 +#pragma once
@@ -13516,8 +13617,9 @@
 +        blur_capture.Complete();
 +}
 +}  // namespace blur_metal_capture
---- /dev/null
-+++ b/src/graphics/metal_runtime/dxbc_to_dxil_converter.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/dxbc_to_dxil_converter.cpp b/src/graphics/metal_runtime/dxbc_to_dxil_converter.cpp
+--- a/src/graphics/metal_runtime/dxbc_to_dxil_converter.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/dxbc_to_dxil_converter.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,233 @@
 +/**
 + ******************************************************************************
@@ -13752,8 +13854,9 @@
 +}  // namespace metal
 +}  // namespace gpu
 +}  // namespace xe
---- /dev/null
-+++ b/src/graphics/metal_runtime/flags.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/flags.cpp b/src/graphics/metal_runtime/flags.cpp
+--- a/src/graphics/metal_runtime/flags.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/flags.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,21 @@
 +#include <rex/graphics/metal_runtime/flags.h>
 +REXCVAR_DEFINE_BOOL(metal_shader_disk_cache, true, "GPU", "Cache compiled Metal shader libraries (metallib) to disk when "
@@ -13776,8 +13879,9 @@
 +            "Required for iOS support. Experimental.");
 +
 +REXCVAR_DEFINE_INT32(metal_draw_ring_count, 128, "GPU/Metal", "Number of retained draw argument slots");
---- /dev/null
-+++ b/src/graphics/metal_runtime/ir_runtime_impl.mm
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/ir_runtime_impl.mm b/src/graphics/metal_runtime/ir_runtime_impl.mm
+--- a/src/graphics/metal_runtime/ir_runtime_impl.mm	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/ir_runtime_impl.mm	2026-10-31 07:26:26
 @@ -0,0 +1,19 @@
 +/**
 + ******************************************************************************
@@ -13798,8 +13902,9 @@
 +
 +// Use the actual runtime header with absolute path
 +#include <metal_irconverter_runtime.h>
---- /dev/null
-+++ b/src/graphics/metal_runtime/metal_command_processor.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/metal_command_processor.cpp b/src/graphics/metal_runtime/metal_command_processor.cpp
+--- a/src/graphics/metal_runtime/metal_command_processor.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/metal_command_processor.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,10830 @@
 +/**
 + ******************************************************************************
@@ -24631,8 +24736,9 @@
 +}  // namespace metal
 +}  // namespace gpu
 +}  // namespace xe
---- /dev/null
-+++ b/src/graphics/metal_runtime/metal_geometry_shader.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/metal_geometry_shader.cpp b/src/graphics/metal_runtime/metal_geometry_shader.cpp
+--- a/src/graphics/metal_runtime/metal_geometry_shader.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/metal_geometry_shader.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,1146 @@
 +/**
 + ******************************************************************************
@@ -25780,8 +25886,9 @@
 +}  // namespace metal
 +}  // namespace gpu
 +}  // namespace xe
---- /dev/null
-+++ b/src/graphics/metal_runtime/metal_graphics_system.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/metal_graphics_system.cpp b/src/graphics/metal_runtime/metal_graphics_system.cpp
+--- a/src/graphics/metal_runtime/metal_graphics_system.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/metal_graphics_system.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,9 @@
 +#include <rex/graphics/metal_runtime/metal_graphics_system.h>
 +#include <rex/graphics/metal_runtime/metal_command_processor.h>
@@ -25792,8 +25899,9 @@
 + return std::make_unique<MetalCommandProcessor>(this, kernel_state_);
 +}
 +}
---- /dev/null
-+++ b/src/graphics/metal_runtime/metal_heap_pool.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/metal_heap_pool.cpp b/src/graphics/metal_runtime/metal_heap_pool.cpp
+--- a/src/graphics/metal_runtime/metal_heap_pool.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/metal_heap_pool.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,127 @@
 +/**
 + ******************************************************************************
@@ -25922,8 +26030,9 @@
 +}  // namespace metal
 +}  // namespace gpu
 +}  // namespace xe
---- /dev/null
-+++ b/src/graphics/metal_runtime/metal_primitive_processor.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/metal_primitive_processor.cpp b/src/graphics/metal_runtime/metal_primitive_processor.cpp
+--- a/src/graphics/metal_runtime/metal_primitive_processor.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/metal_primitive_processor.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,286 @@
 +/**
 + ******************************************************************************
@@ -26211,9 +26320,10 @@
 +}  // namespace metal
 +}  // namespace gpu
 +}  // namespace xe
---- /dev/null
-+++ b/src/graphics/metal_runtime/metal_render_target_cache.cpp
-@@ -0,0 +1,9252 @@
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/metal_render_target_cache.cpp b/src/graphics/metal_runtime/metal_render_target_cache.cpp
+--- a/src/graphics/metal_runtime/metal_render_target_cache.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/metal_render_target_cache.cpp	2026-11-01 04:23:24
+@@ -0,0 +1,9290 @@
 +#include "rex/graphics/metal_runtime/blur_capture.h"
 +/**
 + ******************************************************************************
@@ -30228,15 +30338,53 @@
 +
 +void MetalRenderTargetCache::DumpRenderTargets(
 +    uint32_t dump_base, uint32_t dump_row_length_used, uint32_t dump_rows,
-+    uint32_t dump_pitch, MTL::CommandBuffer* command_buffer) {
++    uint32_t dump_pitch, bool is_depth, MTL::CommandBuffer* command_buffer) {
 +  REXLOG_DEBUG(
 +      "MetalRenderTargetCache::DumpRenderTargets: base={} row_length_used={} "
-+      "rows={} pitch={}",
-+      dump_base, dump_row_length_used, dump_rows, dump_pitch);
++      "rows={} pitch={} is_depth={}",
++      dump_base, dump_row_length_used, dump_rows, dump_pitch, is_depth);
 +
 +  std::vector<ResolveCopyDumpRectangle> rectangles;
 +  GetResolveCopyRectanglesToDump(dump_base, dump_row_length_used, dump_rows,
 +                                 dump_pitch, rectangles);
++
++  // Filter out mismatched render target types (e.g. depth RT when resolving color).
++  std::vector<ResolveCopyDumpRectangle> matching_rectangles;
++  for (const auto& rect : rectangles) {
++    if (rect.render_target && rect.render_target->key().is_depth == is_depth) {
++      matching_rectangles.push_back(rect);
++    }
++  }
++  if (matching_rectangles.empty()) {
++    // If ownership ranges were usurped by an unassociated draw (such as depth-only
++    // draws during predicated tiling passes), fall back to looking up the target directly.
++    for (const auto& pair : render_targets()) {
++      if (pair.second && pair.first.is_depth == is_depth &&
++          pair.first.base_tiles == dump_base &&
++          pair.first.pitch_tiles_at_32bpp == dump_pitch) {
++        matching_rectangles.emplace_back(pair.second, 0, dump_rows, 0,
++                                         dump_row_length_used);
++        REXLOG_INFO(
++            "DumpLog: fallback directly bound rt {:08X} for base {} (is_depth={})",
++            pair.first.key, dump_base, is_depth);
++        break;
++      }
++    }
++    if (matching_rectangles.empty()) {
++      for (const auto& pair : render_targets()) {
++        if (pair.second && pair.first.is_depth == is_depth &&
++            pair.first.base_tiles == dump_base) {
++          matching_rectangles.emplace_back(pair.second, 0, dump_rows, 0,
++                                           dump_row_length_used);
++          REXLOG_INFO(
++              "DumpLog: fallback bound rt {:08X} (relaxed pitch) for base {} (is_depth={})",
++              pair.first.key, dump_base, is_depth);
++          break;
++        }
++      }
++    }
++  }
++  rectangles = std::move(matching_rectangles);
 +  if (uint32_t every = REXCVAR_GET(metal_debug_log_resolves_every)) {
 +    if (!(command_processor_.swap_count() % every)) {
 +      REXLOG_INFO("DumpLog swap {} base {} row_length {} rows {} pitch {} rects {}",
@@ -30901,7 +31049,7 @@
 +  // from EDRAM to shared memory. Resolve-time blend fallback is not correct
 +  // because blending state is per-draw, not per-resolve.
 +  DumpRenderTargets(dump_base, dump_row_length_used, dump_rows, dump_pitch,
-+                    command_buffer);
++                    is_depth, command_buffer);
 +
 +  uint32_t dest_base = resolve_info.copy_dest_base;
 +  uint32_t dest_local_start = resolve_info.copy_dest_extent_start - dest_base;
@@ -35466,8 +35614,9 @@
 +}  // namespace metal
 +}  // namespace gpu
 +}  // namespace xe
---- /dev/null
-+++ b/src/graphics/metal_runtime/metal_shader.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/metal_shader.cpp b/src/graphics/metal_runtime/metal_shader.cpp
+--- a/src/graphics/metal_runtime/metal_shader.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/metal_shader.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,305 @@
 +/**
 + ******************************************************************************
@@ -35774,8 +35923,9 @@
 +}  // namespace metal
 +}  // namespace gpu
 +}  // namespace xe
---- /dev/null
-+++ b/src/graphics/metal_runtime/metal_shader_cache.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/metal_shader_cache.cpp b/src/graphics/metal_runtime/metal_shader_cache.cpp
+--- a/src/graphics/metal_runtime/metal_shader_cache.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/metal_shader_cache.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,247 @@
 +/**
 + ******************************************************************************
@@ -36024,8 +36174,9 @@
 +}  // namespace metal
 +}  // namespace gpu
 +}  // namespace xe
---- /dev/null
-+++ b/src/graphics/metal_runtime/metal_shader_converter.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/metal_shader_converter.cpp b/src/graphics/metal_runtime/metal_shader_converter.cpp
+--- a/src/graphics/metal_runtime/metal_shader_converter.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/metal_shader_converter.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,679 @@
 +/**
 + ******************************************************************************
@@ -36706,8 +36857,9 @@
 +}  // namespace metal
 +}  // namespace gpu
 +}  // namespace xe
---- /dev/null
-+++ b/src/graphics/metal_runtime/metal_shared_memory.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/metal_shared_memory.cpp b/src/graphics/metal_runtime/metal_shared_memory.cpp
+--- a/src/graphics/metal_runtime/metal_shared_memory.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/metal_shared_memory.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,225 @@
 +/**
 + ******************************************************************************
@@ -36934,8 +37086,9 @@
 +}  // namespace metal
 +}  // namespace gpu
 +}  // namespace xe
---- /dev/null
-+++ b/src/graphics/metal_runtime/metal_texture_cache.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/metal_texture_cache.cpp b/src/graphics/metal_runtime/metal_texture_cache.cpp
+--- a/src/graphics/metal_runtime/metal_texture_cache.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/metal_texture_cache.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,3670 @@
 +/**
 + ******************************************************************************
@@ -40607,8 +40760,9 @@
 +}  // namespace metal
 +}  // namespace gpu
 +}  // namespace xe
---- /dev/null
-+++ b/src/graphics/metal_runtime/msl_shader.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/msl_shader.cpp b/src/graphics/metal_runtime/msl_shader.cpp
+--- a/src/graphics/metal_runtime/msl_shader.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/msl_shader.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,1290 @@
 +/**
 + ******************************************************************************
@@ -41900,8 +42054,9 @@
 +}  // namespace metal
 +}  // namespace gpu
 +}  // namespace xe
---- /dev/null
-+++ b/src/graphics/metal_runtime/runtime_check.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/metal_runtime/runtime_check.cpp b/src/graphics/metal_runtime/runtime_check.cpp
+--- a/src/graphics/metal_runtime/runtime_check.cpp	1969-12-31 19:00:00
++++ b/src/graphics/metal_runtime/runtime_check.cpp	2026-10-31 07:26:26
 @@ -0,0 +1,460 @@
 +// Full game-backend check. Controlled guest data; does not launch FM3.
 +#include <rex/graphics/metal_runtime/metal_graphics_system.h>
@@ -42363,8 +42518,32 @@
 +extern "C" REX_GPU_PLUGIN_EXPORT int blur_metal_capture_validate(const char* directory) {
 +  return blur_metal_capture_validate_type(directory, 0);
 +}
---- a/src/graphics/pipeline/shader/dxbc_translator.cpp
-+++ b/src/graphics/pipeline/shader/dxbc_translator.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/pipeline/render_target/cache.cpp b/src/graphics/pipeline/render_target/cache.cpp
+--- a/src/graphics/pipeline/render_target/cache.cpp	2026-08-21 18:10:13
++++ b/src/graphics/pipeline/render_target/cache.cpp	2026-11-01 04:18:00
+@@ -648,13 +648,16 @@
+     }
+     uint32_t rt_is_64bpp = (rts_are_64bpp >> rt_bit_index) & 1;
+     // The last render target can occupy the EDRAM until the base of the first
+-    // render target (itself in case of 1 render target) with EDRAM addressing
+-    // wrapping.
++    // render target with EDRAM addressing wrapping only if multiple render targets
++    // are bound. When only 1 render target is bound, clamp to EDRAM size to
++    // prevent wrapping around and usurping earlier render targets at lower bases.
+     rt_lengths_tiles[i] = std::min(std::min(length_used_tiles_at_32bpp << rt_is_64bpp,
+                                             rt_max_distance_tiles_at_64bpp >> (rt_is_64bpp ^ 1)),
+                                    ((i + 1 < edram_bases_sorted_count)
+                                         ? edram_bases_sorted[i + 1].first
+-                                        : (xenos::kEdramTileCount + edram_bases_sorted[0].first)) -
++                                        : (edram_bases_sorted_count > 1
++                                               ? (xenos::kEdramTileCount + edram_bases_sorted[0].first)
++                                               : xenos::kEdramTileCount)) -
+                                        rt_base);
+   }
+ 
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/pipeline/shader/dxbc_translator.cpp b/src/graphics/pipeline/shader/dxbc_translator.cpp
+--- a/src/graphics/pipeline/shader/dxbc_translator.cpp	2026-08-21 18:10:13
++++ b/src/graphics/pipeline/shader/dxbc_translator.cpp	2026-10-31 07:26:26
 @@ -79,13 +79,15 @@
  }
  DxbcShaderTranslator::~DxbcShaderTranslator() = default;
@@ -42383,8 +42562,41 @@
    TranslateAnalyzedShader(translation);
    is_depth_only_pixel_shader_ = false;
    return translation.translated_binary();
---- a/src/graphics/pipeline/texture/cache.cpp
-+++ b/src/graphics/pipeline/texture/cache.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/pipeline/shader/spirv_translator_fetch.cpp b/src/graphics/pipeline/shader/spirv_translator_fetch.cpp
+--- a/src/graphics/pipeline/shader/spirv_translator_fetch.cpp	2026-08-21 18:10:13
++++ b/src/graphics/pipeline/shader/spirv_translator_fetch.cpp	2026-11-01 04:53:29
+@@ -2029,11 +2029,25 @@
+           }
+         }
+ 
+-        // Apply the exponent bias from the bits 13:18 of the fetch constant
+-        // word 4.
++        // Apply the exponent bias, which is bits 13:18 of word 3 - not of word
++        // 4, whose bits 12:21 are the LOD bias. The two overlap, so taking the
++        // exponent from word 4 turns an ordinary negative LOD bias into a
++        // division.
++        id_vector_temp_.clear();
++        id_vector_temp_.push_back(const_int_0_);
++        id_vector_temp_.push_back(
++            builder_->makeIntConstant(int((fetch_constant_word_0_index + 3) >> 2)));
++        id_vector_temp_.push_back(
++            builder_->makeIntConstant(int((fetch_constant_word_0_index + 3) & 3)));
++        spv::Id fetch_constant_word_3_signed = builder_->createUnaryOp(
++            spv::OpBitcast, type_int_,
++            builder_->createLoad(
++                builder_->createAccessChain(spv::StorageClassUniform, uniform_fetch_constants_,
++                                            id_vector_temp_),
++                spv::NoPrecision));
+         spv::Id result_exponent_bias = builder_->createBinBuiltinCall(
+             type_float_, ext_inst_glsl_std_450_, GLSLstd450Ldexp, const_float_1_,
+-            builder_->createTriOp(spv::OpBitFieldSExtract, type_int_, fetch_constant_word_4_signed,
++            builder_->createTriOp(spv::OpBitFieldSExtract, type_int_, fetch_constant_word_3_signed,
+                                   builder_->makeUintConstant(13), builder_->makeUintConstant(6)));
+         {
+           uint32_t result_remaining_components = used_result_nonzero_components;
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/pipeline/texture/cache.cpp b/src/graphics/pipeline/texture/cache.cpp
+--- a/src/graphics/pipeline/texture/cache.cpp	2026-08-21 18:10:13
++++ b/src/graphics/pipeline/texture/cache.cpp	2026-10-31 07:26:26
 @@ -1,3 +1,5 @@
 +#include <rex/graphics/correspondence_capture.h>
 +#include <rex/graphics/consumption_trace.h>
@@ -42400,18 +42612,19 @@
    texture.LogAction("Loaded");
  
    return true;
---- a/src/graphics/plugin_main.cpp
-+++ b/src/graphics/plugin_main.cpp
-@@ -16,6 +16,9 @@
- 
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/plugin_main.cpp b/src/graphics/plugin_main.cpp
+--- a/src/graphics/plugin_main.cpp	2026-08-21 18:10:13
++++ b/src/graphics/plugin_main.cpp	2026-10-31 07:26:26
+@@ -17,6 +17,9 @@
  #if REX_HAS_D3D12
  #include <rex/graphics/d3d12/graphics_system.h>
-+#endif
+ #endif
 +#if REX_HAS_METAL
 +#include <rex/graphics/metal_runtime/metal_graphics_system.h>
- #endif
++#endif
  #if REX_HAS_VULKAN
  #include <rex/graphics/vulkan/graphics_system.h>
+ #endif
 @@ -38,6 +41,11 @@
    }
  
@@ -42424,23 +42637,59 @@
  #if REX_HAS_D3D12
    if (backend == "any" || backend == "d3d12") {
      return new rex::graphics::d3d12::D3D12GraphicsSystem();
---- a/src/graphics/util/draw.cpp
-+++ b/src/graphics/util/draw.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/util/draw.cpp b/src/graphics/util/draw.cpp
+--- a/src/graphics/util/draw.cpp	2026-08-21 18:10:13
++++ b/src/graphics/util/draw.cpp	2026-11-01 04:56:32
 @@ -1,3 +1,4 @@
 +#include <rex/graphics/consumption_trace.h>
  /**
   ******************************************************************************
   * Xenia : Xbox 360 Emulator Research Project                                 *
-@@ -868,6 +869,7 @@
+@@ -863,11 +864,22 @@
+     return false;
+   }
+ 
++  uint32_t surface_pitch = rb_surface_info.surface_pitch;
++  auto rb_copy_dest_pitch = regs.Get<reg::RB_COPY_DEST_PITCH>();
++  if (x1 > int32_t(surface_pitch) && rb_copy_dest_pitch.copy_dest_pitch >= uint32_t(x1) &&
++      scissor_right >= x1 && rb_surface_info.msaa_samples == xenos::MsaaSamples::k1X) {
++    uint32_t dest_pitch = rb_copy_dest_pitch.copy_dest_pitch;
++    REXGPU_WARN("Resolve region x1 ({}) > surface pitch ({}), using destination pitch ({})",
++                x1, surface_pitch, dest_pitch);
++    surface_pitch = dest_pitch;
++  }
++
+   // Clamp to the EDRAM surface pitch (maximum possible surface pitch is also
+   // assumed to be the largest resolvable size).
    int32_t surface_pitch_aligned =
-       int32_t(rb_surface_info.surface_pitch & ~uint32_t(xenos::kResolveAlignmentPixels - 1));
+-      int32_t(rb_surface_info.surface_pitch & ~uint32_t(xenos::kResolveAlignmentPixels - 1));
++      int32_t(surface_pitch & ~uint32_t(xenos::kResolveAlignmentPixels - 1));
    if (x1 > surface_pitch_aligned) {
 +    blur_trace::Anomaly(rb_copy_control.copy_src_select < xenos::kMaxColorRenderTargets);
      REXGPU_ERROR("Resolve region {} <= x < {} is outside the surface pitch {}", x0, x1,
                   surface_pitch_aligned);
      x0 = std::min(x0, surface_pitch_aligned);
---- a/src/graphics/vulkan/command_processor.cpp
-+++ b/src/graphics/vulkan/command_processor.cpp
+@@ -946,7 +958,7 @@
+   uint32_t rb_copy_dest_base = regs[XE_GPU_REG_RB_COPY_DEST_BASE];
+   uint32_t copy_dest_base_adjusted = rb_copy_dest_base;
+   uint32_t copy_dest_extent_start, copy_dest_extent_end;
+-  auto rb_copy_dest_pitch = regs.Get<reg::RB_COPY_DEST_PITCH>();
++  rb_copy_dest_pitch = regs.Get<reg::RB_COPY_DEST_PITCH>();
+   uint32_t copy_dest_pitch_aligned_div_32 =
+       (rb_copy_dest_pitch.copy_dest_pitch + (xenos::kTextureTileWidthHeight - 1)) >>
+       xenos::kTextureTileWidthHeightLog2;
+@@ -1020,7 +1032,7 @@
+       (x0_samples % xenos::kEdramTileWidthSamples) >> (sample_count_log2_x + 3);
+   info_out.coordinate_info.edram_offset_y_div_8 =
+       (y0_samples % xenos::kEdramTileHeightSamples) >> (sample_count_log2_y + 3);
+-  uint32_t surface_pitch_tiles = xenos::GetSurfacePitchTiles(rb_surface_info.surface_pitch,
++  uint32_t surface_pitch_tiles = xenos::GetSurfacePitchTiles(surface_pitch,
+                                                              rb_surface_info.msaa_samples, false);
+   uint32_t edram_base_offset_tiles =
+       base_offset_y_tiles * surface_pitch_tiles + base_offset_x_tiles;
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/vulkan/command_processor.cpp b/src/graphics/vulkan/command_processor.cpp
+--- a/src/graphics/vulkan/command_processor.cpp	2026-08-21 18:10:13
++++ b/src/graphics/vulkan/command_processor.cpp	2026-10-31 07:26:26
 @@ -1,3 +1,10 @@
 +#include <rex/graphics/vulkan/pipeline_observer.h>
 +#include <rex/graphics/correspondence_capture.h>
@@ -42548,14 +42797,14 @@
          // In case the swap command is the only one in the frame.
          if (!BeginSubmission(true)) {
            return false;
-@@ -2921,8 +2978,112 @@
+@@ -2921,9 +2978,113 @@
          // presenter so it can submit its own commands for displaying it to the
          // queue, and also need to submit the release barrier.
          EndSubmission(true);
 +        correspondence::Get().Callback(correspondence_attempt,true);
          return true;
        });
-+
+ 
 +  if(cc.pending())cc.Log("refresh callback="+std::to_string(cc.callback)+" callback_ok="+std::to_string(cc.callback_ok)+" refreshed="+std::to_string(correspondence_refreshed));
 +  if(cc.phase==correspondence::Phase::Failed && render_target_cache_->DiagnosticStagesPending()) {
 +    // Preserve a bounded incomplete prefix after completion, never label it a
@@ -42658,9 +42907,10 @@
 +      }
 +    }
 +  }
- 
++
    // End the frame even if did not present for any reason (the image refresher
    // was not called), to prevent leaking per-frame resources.
+   EndSubmission(true);
 @@ -3973,6 +4134,8 @@
  
    // Update uniform buffers and descriptor sets after binding the pipeline with
@@ -42800,19 +43050,19 @@
    } else {
      std::pair<VkBuffer, VkDeviceSize> index_buffer;
      switch (primitive_processing_result.index_buffer_type) {
-@@ -4152,7 +4427,11 @@
+@@ -4152,8 +4427,12 @@
              : VK_INDEX_TYPE_UINT32);
      deferred_command_buffer_.CmdVkDrawIndexed(primitive_processing_result.host_draw_vertex_count, 1,
                                                0, 0, 0);
--  }
 +    blur_trace::DrawRecorded(primitive_processing_result.host_draw_vertex_count, true);
 +    record_provenance(true, uint64_t(index_buffer.first), uint64_t(index_buffer.second));
-+  }
-+
-+  render_target_cache_->DiagnosticStageDraw();
+   }
  
++  render_target_cache_->DiagnosticStageDraw();
++
    // Invalidate textures in memexported memory and watch for changes.
    if (!memexport_ranges_.empty()) {
+     for (const draw_util::MemExportRange& memexport_range : memexport_ranges_) {
 @@ -4649,6 +4928,10 @@
                            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
                            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
@@ -42860,8 +43110,9 @@
    if (write_pixel_textures && texture_count_pixel) {
      for (const VulkanShader::TextureBinding& texture_binding : *textures_pixel) {
        VkDescriptorImageInfo& descriptor_image_info = descriptor_write_image_info_.emplace_back();
---- a/src/graphics/vulkan/deferred_command_buffer.cpp
-+++ b/src/graphics/vulkan/deferred_command_buffer.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/vulkan/deferred_command_buffer.cpp b/src/graphics/vulkan/deferred_command_buffer.cpp
+--- a/src/graphics/vulkan/deferred_command_buffer.cpp	2026-08-21 18:10:13
++++ b/src/graphics/vulkan/deferred_command_buffer.cpp	2026-10-31 07:26:26
 @@ -156,6 +156,15 @@
                  rex::align(sizeof(ArgsVkCopyBufferToImage), alignof(VkBufferImageCopy))));
        } break;
@@ -42878,8 +43129,9 @@
        case Command::kVkCopyQueryPoolResults: {
          auto& args = *reinterpret_cast<const ArgsVkCopyQueryPoolResults*>(stream);
          dfn.vkCmdCopyQueryPoolResults(command_buffer, args.query_pool, args.first_query,
---- a/src/graphics/vulkan/pipeline_cache.cpp
-+++ b/src/graphics/vulkan/pipeline_cache.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/vulkan/pipeline_cache.cpp b/src/graphics/vulkan/pipeline_cache.cpp
+--- a/src/graphics/vulkan/pipeline_cache.cpp	2026-08-21 18:10:13
++++ b/src/graphics/vulkan/pipeline_cache.cpp	2026-10-31 07:26:26
 @@ -1,3 +1,4 @@
 +#include <rex/graphics/vulkan/pipeline_observer.h>
  /**
@@ -42893,8 +43145,9 @@
    bool was_placeholder =
        creation_arguments.pipeline->second.is_placeholder.load(std::memory_order_acquire);
    VkPipeline old_pipeline =
---- a/src/graphics/vulkan/primitive_processor.cpp
-+++ b/src/graphics/vulkan/primitive_processor.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/vulkan/primitive_processor.cpp b/src/graphics/vulkan/primitive_processor.cpp
+--- a/src/graphics/vulkan/primitive_processor.cpp	2026-08-21 18:10:13
++++ b/src/graphics/vulkan/primitive_processor.cpp	2026-10-31 07:26:26
 @@ -11,6 +11,7 @@
  
  #include <algorithm>
@@ -42913,8 +43166,9 @@
            ui::vulkan::util::MemoryPurpose::kDeviceLocal, builtin_index_buffer_,
            builtin_index_buffer_memory_)) {
      REXGPU_ERROR(
---- a/src/graphics/vulkan/render_target_cache.cpp
-+++ b/src/graphics/vulkan/render_target_cache.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/vulkan/render_target_cache.cpp b/src/graphics/vulkan/render_target_cache.cpp
+--- a/src/graphics/vulkan/render_target_cache.cpp	2026-08-21 18:10:13
++++ b/src/graphics/vulkan/render_target_cache.cpp	2026-10-31 07:26:26
 @@ -1,3 +1,9 @@
 +#include <rex/graphics/correspondence_capture.h>
 +#include <chrono>
@@ -43423,7 +43677,7 @@
    VkClearRect resolve_clear_rect;
    if (resolve_clear_needed) {
      // Assuming the rectangle is already clamped by the setup function from the
-@@ -4781,6 +5209,16 @@
+@@ -4781,7 +5209,17 @@
  
      auto& dest_vulkan_rt = *static_cast<VulkanRenderTarget*>(dest_rt);
      RenderTargetKey dest_rt_key = dest_vulkan_rt.key();
@@ -43436,10 +43690,11 @@
 +    } ladder_group_audit{ImageLadderRequested() && blur_image_ladder.owner_image==uint64_t(dest_vulkan_rt.image()) &&
 +        !blur_image_ladder.selected && correspondence::Get().phase==correspondence::Phase::Armed,
 +        blur_image_ladder.transfers,uint32_t(current_transfers.size())};
-+
  
++
      // Late barriers in case there was cross-copying that prevented merging of
      // barriers.
+     {
 @@ -4821,6 +5259,7 @@
      }
      VkRenderPass transfer_render_pass = GetHostRenderTargetsRenderPass(transfer_render_pass_key);
@@ -43485,7 +43740,7 @@
          for (uint32_t j = 0; j < transfer_sample_pipeline_count; ++j) {
            if (j) {
              command_processor_.BindExternalGraphicsPipeline(transfer_pipelines[j]);
-@@ -5269,8 +5713,25 @@
+@@ -5269,9 +5713,26 @@
                command_buffer.CmdVkSetStencilWriteMask(VK_STENCIL_FACE_FRONT_AND_BACK,
                                                        transfer_stencil_bit);
              }
@@ -43503,14 +43758,15 @@
 +            }
 +
            }
-+        }
+         }
 +        if(aux_invocation){
 +          correspondence::Get().Log("aux_transfer_recorded source_key="+std::to_string(source_vulkan_rt.key().key)+" source_image="+std::to_string(uint64_t(source_vulkan_rt.image()))+" vertices="+std::to_string(transfer_vertex_count)+" sample_pipelines="+std::to_string(transfer_sample_pipeline_count));
 +          DiagnosticAuxCapture(&dest_vulkan_rt,"after_transfer_invocation");
 +          command_processor_.SubmitBarriersAndEnterRenderTargetCacheRenderPass(transfer_render_pass,transfer_framebuffer,transfer_dest_view,dest_rt_key.is_depth);
-         }
++        }
        }
      }
+ 
 @@ -5403,6 +5864,9 @@
          }
        }
@@ -43652,8 +43908,9 @@
    if (dump_rectangles_.empty()) {
      return true;
    }
---- a/src/graphics/vulkan/texture_cache.cpp
-+++ b/src/graphics/vulkan/texture_cache.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/graphics/vulkan/texture_cache.cpp b/src/graphics/vulkan/texture_cache.cpp
+--- a/src/graphics/vulkan/texture_cache.cpp	2026-08-21 18:10:13
++++ b/src/graphics/vulkan/texture_cache.cpp	2026-10-31 07:26:26
 @@ -1,3 +1,6 @@
 +#include <rex/graphics/correspondence_capture.h>
 +#include <rex/graphics/consumption_trace.h>
@@ -43661,7 +43918,7 @@
  /**
   ******************************************************************************
   * Xenia : Xbox 360 Emulator Research Project                                 *
-@@ -36,6 +39,20 @@
+@@ -36,7 +39,21 @@
  REXCVAR_DEFINE_BOOL(non_seamless_cube_map, false, "GPU", "Use non-seamless cube map sampling");
  
  namespace rex::graphics::vulkan {
@@ -43678,11 +43935,12 @@
 +  auto& cc=correspondence::Get();std::ofstream f(cc.directory+"/"+name,std::ios::binary);f.write(static_cast<const char*>(data),size);f.flush();return bool(f);
 +}
 +}
-+
  
++
  // Generated with `xb buildshaders`.
  namespace shaders {
-@@ -656,7 +673,29 @@
+ #include "../shaders/vulkan_spirv/texture_load_128bpb_cs.h"
+@@ -656,8 +673,30 @@
      }
    }
    if (image_view != VK_NULL_HANDLE) {
@@ -43705,13 +43963,14 @@
 +      blur_trace::Binding(fetch_constant_index, observed_key.base_page << 12, observed_texture->GetGuestBaseSize(), observed_key.mip_page << 12, observed_texture->GetGuestMipsSize(), uint64_t(image_view), observed_key.scaled_resolve);
 +    }
      return image_view;
-+  }
+   }
 +  if (draw_provenance::Enabled()) {
 +    draw_provenance::Get().Binding("valid=0 stage=" + std::to_string(draw_provenance::stage) +
 +                                    " fetch=" + std::to_string(fetch_constant_index));
-   }
++  }
    if (command_processor_.GetVulkanDevice()->properties().nullDescriptor) {
      return VK_NULL_HANDLE;
+   }
 @@ -671,6 +710,115 @@
    }
  }
@@ -43896,8 +44155,9 @@
    views_.emplace(view_key, view);
    return view;
  }
---- a/src/input/input_system.cpp
-+++ b/src/input/input_system.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/input/input_system.cpp b/src/input/input_system.cpp
+--- a/src/input/input_system.cpp	2026-08-21 18:10:13
++++ b/src/input/input_system.cpp	2026-10-31 07:26:26
 @@ -28,6 +28,7 @@
      .allowed({"sdl", "xinput"});
  
@@ -43917,8 +44177,9 @@
    if (!assignment_) {
      return X_ERROR_DEVICE_NOT_CONNECTED;
    }
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/apply_gamma_pwl.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/apply_gamma_pwl.cs.xesl b/src/metal_runtime_sources/gpu/shaders/apply_gamma_pwl.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/apply_gamma_pwl.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/apply_gamma_pwl.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,11 @@
 +/**
 + ******************************************************************************
@@ -43931,8 +44192,9 @@
 +
 +#define XE_APPLY_GAMMA_COMPUTE
 +#include "apply_gamma_pwl.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/apply_gamma_pwl.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/apply_gamma_pwl.xesli b/src/metal_runtime_sources/gpu/shaders/apply_gamma_pwl.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/apply_gamma_pwl.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/apply_gamma_pwl.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,107 @@
 +/**
 + ******************************************************************************
@@ -44041,8 +44303,9 @@
 +  out_xe(xe_apply_gamma_dest) = apply_gamma_output;
 +entry_code_end_xe
 +#endif
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/apply_gamma_table.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/apply_gamma_table.cs.xesl b/src/metal_runtime_sources/gpu/shaders/apply_gamma_table.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/apply_gamma_table.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/apply_gamma_table.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,11 @@
 +/**
 + ******************************************************************************
@@ -44055,8 +44318,9 @@
 +
 +#define XE_APPLY_GAMMA_COMPUTE
 +#include "apply_gamma_table.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/apply_gamma_table.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/apply_gamma_table.xesli b/src/metal_runtime_sources/gpu/shaders/apply_gamma_table.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/apply_gamma_table.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/apply_gamma_table.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,86 @@
 +/**
 + ******************************************************************************
@@ -44144,8 +44408,9 @@
 +  out_xe(xe_apply_gamma_dest) = apply_gamma_output;
 +entry_code_end_xe
 +#endif
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/edram.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/edram.xesli b/src/metal_runtime_sources/gpu/shaders/edram.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/edram.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/edram.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,115 @@
 +/**
 + ******************************************************************************
@@ -44262,8 +44527,9 @@
 +}
 +
 +#endif  // XENIA_GPU_SHADERS_EDRAM_XESLI_
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/endian.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/endian.xesli b/src/metal_runtime_sources/gpu/shaders/endian.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/endian.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/endian.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,76 @@
 +/**
 + ******************************************************************************
@@ -44341,8 +44607,9 @@
 +}
 +
 +#endif  // XENIA_GPU_SHADERS_ENDIAN_XESLI_
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/host_depth_store.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/host_depth_store.xesli b/src/metal_runtime_sources/gpu/shaders/host_depth_store.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/host_depth_store.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/host_depth_store.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,51 @@
 +/**
 + ******************************************************************************
@@ -44395,8 +44662,9 @@
 +// used for depth -> depth transfers, where swapping isn't needed).
 +
 +#endif  // XENIA_GPU_SHADERS_HOST_DEPTH_STORE_XESLI_
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/host_depth_store_1xmsaa.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/host_depth_store_1xmsaa.cs.xesl b/src/metal_runtime_sources/gpu/shaders/host_depth_store_1xmsaa.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/host_depth_store_1xmsaa.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/host_depth_store_1xmsaa.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,69 @@
 +/**
 + ******************************************************************************
@@ -44467,8 +44735,9 @@
 +                            pixel_index + int2_xe(7, 0), 0).r)));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/host_depth_store_2xmsaa.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/host_depth_store_2xmsaa.cs.xesl b/src/metal_runtime_sources/gpu/shaders/host_depth_store_2xmsaa.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/host_depth_store_2xmsaa.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/host_depth_store_2xmsaa.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,88 @@
 +/**
 + ******************************************************************************
@@ -44558,8 +44827,9 @@
 +                               source_sample_index).r)));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/host_depth_store_4xmsaa.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/host_depth_store_4xmsaa.cs.xesl b/src/metal_runtime_sources/gpu/shaders/host_depth_store_4xmsaa.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/host_depth_store_4xmsaa.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/host_depth_store_4xmsaa.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,83 @@
 +/**
 + ******************************************************************************
@@ -44644,8 +44914,9 @@
 +                               source_sample_right).r)));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/pixel_formats.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/pixel_formats.xesli b/src/metal_runtime_sources/gpu/shaders/pixel_formats.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/pixel_formats.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/pixel_formats.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,1083 @@
 +/**
 + ******************************************************************************
@@ -45730,8 +46001,9 @@
 +}
 +
 +#endif  // XENIA_GPU_SHADERS_PIXEL_FORMATS_XESLI_
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve.xesli b/src/metal_runtime_sources/gpu/shaders/resolve.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/resolve.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,1041 @@
 +/**
 + ******************************************************************************
@@ -46774,12 +47046,14 @@
 +#endif
 +
 +#endif  // XENIA_GPU_SHADERS_RESOLVE_XESLI_
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_1x2xmsaa.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_1x2xmsaa.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_1x2xmsaa.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_1x2xmsaa.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_1x2xmsaa.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1 @@
 +#include "resolve_fast_32bpp_1x2xmsaa.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_1x2xmsaa.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_1x2xmsaa.xesli b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_1x2xmsaa.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_1x2xmsaa.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_1x2xmsaa.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,103 @@
 +/**
 + ******************************************************************************
@@ -46884,17 +47158,20 @@
 +      XeEndianSwap32(pixels_4567, resolve_info.dest_endian_128));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_1x2xmsaa_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_1x2xmsaa_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_1x2xmsaa_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_1x2xmsaa_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_1x2xmsaa_scaled.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,2 @@
 +#define XE_RESOLVE_RESOLUTION_SCALED
 +#include "resolve_fast_32bpp_1x2xmsaa.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_4xmsaa.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_4xmsaa.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_4xmsaa.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_4xmsaa.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_4xmsaa.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1 @@
 +#include "resolve_fast_32bpp_4xmsaa.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_4xmsaa.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_4xmsaa.xesli b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_4xmsaa.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_4xmsaa.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_4xmsaa.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,91 @@
 +/**
 + ******************************************************************************
@@ -46987,17 +47264,20 @@
 +      XeEndianSwap32(pixels_4567, resolve_info.dest_endian_128));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_4xmsaa_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_4xmsaa_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_4xmsaa_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_4xmsaa_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_32bpp_4xmsaa_scaled.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,2 @@
 +#define XE_RESOLVE_RESOLUTION_SCALED
 +#include "resolve_fast_32bpp_4xmsaa.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_1x2xmsaa.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_1x2xmsaa.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_1x2xmsaa.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_1x2xmsaa.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_1x2xmsaa.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1 @@
 +#include "resolve_fast_64bpp_1x2xmsaa.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_1x2xmsaa.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_1x2xmsaa.xesli b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_1x2xmsaa.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_1x2xmsaa.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_1x2xmsaa.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,87 @@
 +/**
 + ******************************************************************************
@@ -47086,17 +47366,20 @@
 +      XeEndianSwap64(pixels_23, resolve_info.dest_endian_128));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_1x2xmsaa_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_1x2xmsaa_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_1x2xmsaa_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_1x2xmsaa_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_1x2xmsaa_scaled.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,2 @@
 +#define XE_RESOLVE_RESOLUTION_SCALED
 +#include "resolve_fast_64bpp_1x2xmsaa.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_4xmsaa.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_4xmsaa.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_4xmsaa.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_4xmsaa.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_4xmsaa.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1 @@
 +#include "resolve_fast_64bpp_4xmsaa.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_4xmsaa.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_4xmsaa.xesli b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_4xmsaa.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_4xmsaa.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_4xmsaa.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,75 @@
 +/**
 + ******************************************************************************
@@ -47173,17 +47456,20 @@
 +      XeEndianSwap64(pixels_23, resolve_info.dest_endian_128));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_4xmsaa_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_4xmsaa_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_4xmsaa_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_4xmsaa_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_fast_64bpp_4xmsaa_scaled.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,2 @@
 +#define XE_RESOLVE_RESOLUTION_SCALED
 +#include "resolve_fast_64bpp_4xmsaa.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_128bpp.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_full_128bpp.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_full_128bpp.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_full_128bpp.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_128bpp.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1 @@
 +#include "resolve_full_128bpp.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_128bpp.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_full_128bpp.xesli b/src/metal_runtime_sources/gpu/shaders/resolve_full_128bpp.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_full_128bpp.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_128bpp.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,64 @@
 +/**
 + ******************************************************************************
@@ -47249,17 +47535,20 @@
 +                      resolve_info.dest_endian_128));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_128bpp_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_full_128bpp_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_full_128bpp_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_full_128bpp_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_128bpp_scaled.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,2 @@
 +#define XE_RESOLVE_RESOLUTION_SCALED
 +#include "resolve_full_128bpp.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_16bpp.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_full_16bpp.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_full_16bpp.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_full_16bpp.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_16bpp.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1 @@
 +#include "resolve_full_16bpp.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_16bpp.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_full_16bpp.xesli b/src/metal_runtime_sources/gpu/shaders/resolve_full_16bpp.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_full_16bpp.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_16bpp.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,59 @@
 +/**
 + ******************************************************************************
@@ -47320,17 +47609,20 @@
 +      XeEndianSwap16(packed, resolve_info.dest_endian_128));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_16bpp_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_full_16bpp_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_full_16bpp_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_full_16bpp_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_16bpp_scaled.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,2 @@
 +#define XE_RESOLVE_RESOLUTION_SCALED
 +#include "resolve_full_16bpp.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_32bpp.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_full_32bpp.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_full_32bpp.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_full_32bpp.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_32bpp.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1 @@
 +#include "resolve_full_32bpp.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_32bpp.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_full_32bpp.xesli b/src/metal_runtime_sources/gpu/shaders/resolve_full_32bpp.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_full_32bpp.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_32bpp.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,61 @@
 +/**
 + ******************************************************************************
@@ -47393,17 +47685,20 @@
 +      XeEndianSwap32(packed, resolve_info.dest_endian_128));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_32bpp_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_full_32bpp_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_full_32bpp_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_full_32bpp_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_32bpp_scaled.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,2 @@
 +#define XE_RESOLVE_RESOLUTION_SCALED
 +#include "resolve_full_32bpp.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_64bpp.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_full_64bpp.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_full_64bpp.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_full_64bpp.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_64bpp.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1 @@
 +#include "resolve_full_64bpp.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_64bpp.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_full_64bpp.xesli b/src/metal_runtime_sources/gpu/shaders/resolve_full_64bpp.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_full_64bpp.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_64bpp.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,65 @@
 +/**
 + ******************************************************************************
@@ -47470,17 +47765,20 @@
 +      XeEndianSwap64(packed_23, resolve_info.dest_endian_128));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_64bpp_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_full_64bpp_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_full_64bpp_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_full_64bpp_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_64bpp_scaled.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,2 @@
 +#define XE_RESOLVE_RESOLUTION_SCALED
 +#include "resolve_full_64bpp.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_8bpp.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_full_8bpp.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_full_8bpp.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_full_8bpp.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_8bpp.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1 @@
 +#include "resolve_full_8bpp.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_8bpp.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_full_8bpp.xesli b/src/metal_runtime_sources/gpu/shaders/resolve_full_8bpp.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_full_8bpp.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_8bpp.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,60 @@
 +/**
 + ******************************************************************************
@@ -47542,13 +47840,15 @@
 +               XePackR8G8B8A8(pixels_4567, resolve_info.dest_num_format)));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_8bpp_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/resolve_full_8bpp_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/resolve_full_8bpp_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/resolve_full_8bpp_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/resolve_full_8bpp_scaled.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,2 @@
 +#define XE_RESOLVE_RESOLUTION_SCALED
 +#include "resolve_full_8bpp.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_address.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_address.xesli b/src/metal_runtime_sources/gpu/shaders/texture_address.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/texture_address.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_address.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,219 @@
 +/**
 + ******************************************************************************
@@ -47769,8 +48069,9 @@
 +}
 +
 +#endif  // XENIA_GPU_SHADERS_TEXTURE_ADDRESS_XESLI_
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load.xesli b/src/metal_runtime_sources/gpu/shaders/texture_load.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,183 @@
 +/**
 + ******************************************************************************
@@ -47955,8 +48256,9 @@
 +}
 +
 +#endif  // XENIA_GPU_SHADERS_TEXTURE_LOAD_XESLI_
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_128bpb.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_128bpb.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_128bpb.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_128bpb.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_128bpb.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,10 @@
 +/**
 + ******************************************************************************
@@ -47968,8 +48270,9 @@
 + */
 +
 +#include "texture_load_128bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_128bpb.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_128bpb.xesli b/src/metal_runtime_sources/gpu/shaders/texture_load_128bpb.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_128bpb.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_128bpb.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,41 @@
 +/**
 + ******************************************************************************
@@ -48012,8 +48315,9 @@
 +                     load_info.endian_32));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_128bpb_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_128bpb_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_128bpb_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_128bpb_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_128bpb_scaled.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,11 @@
 +/**
 + ******************************************************************************
@@ -48026,8 +48330,9 @@
 +
 +#define XE_TEXTURE_LOAD_RESOLUTION_SCALED
 +#include "texture_load_128bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_16bpb.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_16bpb.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_16bpb.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_16bpb.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_16bpb.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,11 @@
 +/**
 + ******************************************************************************
@@ -48040,8 +48345,9 @@
 +
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM(blocks) (blocks)
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_16bpb.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_16bpb.xesli b/src/metal_runtime_sources/gpu/shaders/texture_load_16bpb.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_16bpb.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_16bpb.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,42 @@
 +/**
 + ******************************************************************************
@@ -48085,8 +48391,9 @@
 +                                 XE_TEXTURE_LOAD_16BPB_TRANSFORM(guest_blocks));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_16bpb_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_16bpb_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_16bpb_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_16bpb_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_16bpb_scaled.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -48100,8 +48407,9 @@
 +#define XE_TEXTURE_LOAD_RESOLUTION_SCALED
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM(blocks) (blocks)
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb.cs.xesl	2026-10-31 07:26:26
 @@ -0,0 +1,11 @@
 +/**
 + ******************************************************************************
@@ -48114,8 +48422,9 @@
 +
 +#define XE_TEXTURE_LOAD_32BPB_TRANSFORM(blocks) (blocks)
 +#include "texture_load_32bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb.xesli b/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb.xesli	2026-10-31 07:26:26
 @@ -0,0 +1,42 @@
 +/**
 + ******************************************************************************
@@ -48159,8 +48468,9 @@
 +                                 XE_TEXTURE_LOAD_32BPB_TRANSFORM(guest_blocks));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb_64bpb.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb_64bpb.xesli b/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb_64bpb.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb_64bpb.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb_64bpb.xesli	2026-10-31 07:26:27
 @@ -0,0 +1,49 @@
 +/**
 + ******************************************************************************
@@ -48211,8 +48521,9 @@
 +                                 block_offset_host + 0x30u, block_1);
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_32bpb_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -48226,8 +48537,9 @@
 +#define XE_TEXTURE_LOAD_RESOLUTION_SCALED
 +#define XE_TEXTURE_LOAD_32BPB_TRANSFORM(blocks) (blocks)
 +#include "texture_load_32bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_64bpb.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_64bpb.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_64bpb.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_64bpb.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_64bpb.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,11 @@
 +/**
 + ******************************************************************************
@@ -48240,8 +48552,9 @@
 +
 +#define XE_TEXTURE_LOAD_64BPB_TRANSFORM(blocks) (blocks)
 +#include "texture_load_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_64bpb.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_64bpb.xesli b/src/metal_runtime_sources/gpu/shaders/texture_load_64bpb.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_64bpb.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_64bpb.xesli	2026-10-31 07:26:27
 @@ -0,0 +1,42 @@
 +/**
 + ******************************************************************************
@@ -48285,8 +48598,9 @@
 +                                 XE_TEXTURE_LOAD_64BPB_TRANSFORM(guest_blocks));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_64bpb_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_64bpb_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_64bpb_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_64bpb_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_64bpb_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -48300,8 +48614,9 @@
 +#define XE_TEXTURE_LOAD_RESOLUTION_SCALED
 +#define XE_TEXTURE_LOAD_64BPB_TRANSFORM(blocks) (blocks)
 +#include "texture_load_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_8bpb.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_8bpb.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_8bpb.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_8bpb.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_8bpb.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,10 @@
 +/**
 + ******************************************************************************
@@ -48313,8 +48628,9 @@
 + */
 +
 +#include "texture_load_8bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_8bpb.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_8bpb.xesli b/src/metal_runtime_sources/gpu/shaders/texture_load_8bpb.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_8bpb.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_8bpb.xesli	2026-10-31 07:26:27
 @@ -0,0 +1,37 @@
 +/**
 + ******************************************************************************
@@ -48353,8 +48669,9 @@
 +                  XeTextureLoadLocalXAddressXor(8u, 0u, load_info.is_tiled))));
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_8bpb_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_8bpb_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_8bpb_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_8bpb_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_8bpb_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,11 @@
 +/**
 + ******************************************************************************
@@ -48367,8 +48684,9 @@
 +
 +#define XE_TEXTURE_LOAD_RESOLUTION_SCALED
 +#include "texture_load_8bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_bgrg8_rgb8.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_bgrg8_rgb8.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_bgrg8_rgb8.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_bgrg8_rgb8.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_bgrg8_rgb8.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -48382,8 +48700,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TO_64BPB XeBGRG8ToRGB8WithRGBBSwizzle
 +#include "texture_load_32bpb_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_bgrg8_rgbg8.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_bgrg8_rgbg8.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_bgrg8_rgbg8.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_bgrg8_rgbg8.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_bgrg8_rgbg8.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -48397,8 +48716,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TRANSFORM XeBGRG8ToRGBG8
 +#include "texture_load_32bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_ctx1.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_ctx1.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_ctx1.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_ctx1.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_ctx1.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,84 @@
 +/**
 + ******************************************************************************
@@ -48484,8 +48804,9 @@
 +  }
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_depth_float.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_depth_float.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_depth_float.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_depth_float.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_depth_float.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -48500,8 +48821,9 @@
 +#define XE_TEXTURE_LOAD_32BPB_TRANSFORM(blocks) \
 +  (XeFloat20e4To32((blocks) >> 8u))
 +#include "texture_load_32bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_depth_float_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_depth_float_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_depth_float_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_depth_float_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_depth_float_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,14 @@
 +/**
 + ******************************************************************************
@@ -48517,8 +48839,9 @@
 +#define XE_TEXTURE_LOAD_32BPB_TRANSFORM(blocks) \
 +  (XeFloat20e4To32((blocks) >> 8u))
 +#include "texture_load_32bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_depth_unorm.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_depth_unorm.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_depth_unorm.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_depth_unorm.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_depth_unorm.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -48533,8 +48856,9 @@
 +#define XE_TEXTURE_LOAD_32BPB_TRANSFORM(blocks) \
 +  (float_bits_to_uint_xe(XeUNorm24To32((blocks) >> 8u)))
 +#include "texture_load_32bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_depth_unorm_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_depth_unorm_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_depth_unorm_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_depth_unorm_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_depth_unorm_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,14 @@
 +/**
 + ******************************************************************************
@@ -48550,8 +48874,9 @@
 +#define XE_TEXTURE_LOAD_32BPB_TRANSFORM(blocks) \
 +  (float_bits_to_uint_xe(XeUNorm24To32((blocks) >> 8u)))
 +#include "texture_load_32bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxn_rg8.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_dxn_rg8.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_dxn_rg8.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_dxn_rg8.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxn_rg8.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,87 @@
 +/**
 + ******************************************************************************
@@ -48640,8 +48965,9 @@
 +  }
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt1_rgba8.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt1_rgba8.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt1_rgba8.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt1_rgba8.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt1_rgba8.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,81 @@
 +/**
 + ******************************************************************************
@@ -48724,8 +49050,9 @@
 +  }
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3_rgba8.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3_rgba8.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3_rgba8.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3_rgba8.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3_rgba8.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,74 @@
 +/**
 + ******************************************************************************
@@ -48801,8 +49128,9 @@
 +  }
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3a.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3a.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3a.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3a.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3a.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,63 @@
 +/**
 + ******************************************************************************
@@ -48867,8 +49195,9 @@
 +  }
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3aas1111.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3aas1111.xesli b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3aas1111.xesli
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3aas1111.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3aas1111.xesli	2026-10-31 07:26:27
 @@ -0,0 +1,76 @@
 +/**
 + ******************************************************************************
@@ -48946,8 +49275,9 @@
 +  }
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3aas1111_argb4.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3aas1111_argb4.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3aas1111_argb4.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3aas1111_argb4.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3aas1111_argb4.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -48962,8 +49292,9 @@
 +#define XE_TEXTURE_LOAD_DXT3A_AS_1_1_1_1_TO_16BPP \
 +    XeDXT3AAs1111TwoBlocksRowToARGB4
 +#include "texture_load_dxt3aas1111.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3aas1111_bgra4.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3aas1111_bgra4.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3aas1111_bgra4.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3aas1111_bgra4.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt3aas1111_bgra4.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -48978,8 +49309,9 @@
 +#define XE_TEXTURE_LOAD_DXT3A_AS_1_1_1_1_TO_16BPP \
 +    XeDXT3AAs1111TwoBlocksRowToBGRA4
 +#include "texture_load_dxt3aas1111.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt5_rgba8.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt5_rgba8.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt5_rgba8.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt5_rgba8.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt5_rgba8.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,83 @@
 +/**
 + ******************************************************************************
@@ -49064,8 +49396,9 @@
 +  }
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt5a_r8.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt5a_r8.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt5a_r8.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_dxt5a_r8.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_dxt5a_r8.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,88 @@
 +/**
 + ******************************************************************************
@@ -49155,8 +49488,9 @@
 +  }
 +}
 +entry_code_end_compute_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_gbgr8_grgb8.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_gbgr8_grgb8.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_gbgr8_grgb8.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_gbgr8_grgb8.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_gbgr8_grgb8.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49170,8 +49504,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TRANSFORM XeGBGR8ToGRGB8
 +#include "texture_load_32bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_gbgr8_rgb8.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_gbgr8_rgb8.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_gbgr8_rgb8.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_gbgr8_rgb8.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_gbgr8_rgb8.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49185,8 +49520,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TO_64BPB XeGBGR8ToRGB8WithRGBBSwizzle
 +#include "texture_load_32bpb_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49200,8 +49536,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TO_64BPB XeR10G11B11UNormToRGBA16
 +#include "texture_load_32bpb_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -49216,8 +49553,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TO_64BPB XeR10G11B11UNormToRGBA16
 +#include "texture_load_32bpb_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16_snorm.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16_snorm.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16_snorm.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16_snorm.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16_snorm.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49231,8 +49569,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TO_64BPB XeR10G11B11SNormToRGBA16
 +#include "texture_load_32bpb_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16_snorm_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16_snorm_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16_snorm_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16_snorm_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r10g11b11_rgba16_snorm_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -49247,8 +49586,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TO_64BPB XeR10G11B11SNormToRGBA16
 +#include "texture_load_32bpb_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49262,8 +49602,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TO_64BPB XeR11G11B10UNormToRGBA16
 +#include "texture_load_32bpb_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -49278,8 +49619,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TO_64BPB XeR11G11B10UNormToRGBA16
 +#include "texture_load_32bpb_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16_snorm.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16_snorm.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16_snorm.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16_snorm.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16_snorm.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49293,8 +49635,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TO_64BPB XeR11G11B10SNormToRGBA16
 +#include "texture_load_32bpb_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16_snorm_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16_snorm_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16_snorm_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16_snorm_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r11g11b10_rgba16_snorm_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -49309,8 +49652,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TO_64BPB XeR11G11B10SNormToRGBA16
 +#include "texture_load_32bpb_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r16_snorm_float.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r16_snorm_float.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r16_snorm_float.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r16_snorm_float.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r16_snorm_float.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49324,8 +49668,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM XeRG16SNormToRG16Float
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r16_snorm_float_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r16_snorm_float_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r16_snorm_float_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r16_snorm_float_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r16_snorm_float_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -49340,8 +49685,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM XeRG16SNormToRG16Float
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r16_unorm_float.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r16_unorm_float.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r16_unorm_float.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r16_unorm_float.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r16_unorm_float.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49355,8 +49701,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM XeRG16UNormToRG16Float
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r16_unorm_float_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r16_unorm_float_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r16_unorm_float_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r16_unorm_float_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r16_unorm_float_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -49371,8 +49718,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM XeRG16UNormToRG16Float
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_a4r4g4b4.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_a4r4g4b4.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_a4r4g4b4.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_a4r4g4b4.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_a4r4g4b4.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49386,8 +49734,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM XeR4G4B4A4ToA4R4G4B4
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_a4r4g4b4_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_a4r4g4b4_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_a4r4g4b4_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_a4r4g4b4_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_a4r4g4b4_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -49402,8 +49751,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM XeR4G4B4A4ToA4R4G4B4
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_b4g4r4a4.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_b4g4r4a4.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_b4g4r4a4.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_b4g4r4a4.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_b4g4r4a4.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49417,8 +49767,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM XeR4G4B4A4ToB4G4R4A4
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_b4g4r4a4_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_b4g4r4a4_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_b4g4r4a4_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_b4g4r4a4_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r4g4b4a4_b4g4r4a4_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -49433,8 +49784,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM XeR4G4B4A4ToB4G4R4A4
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b5a1_b5g5r5a1.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b5a1_b5g5r5a1.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b5a1_b5g5r5a1.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b5a1_b5g5r5a1.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b5a1_b5g5r5a1.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49448,8 +49800,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM XeR5G5B5A1ToB5G5R5A1
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b5a1_b5g5r5a1_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b5a1_b5g5r5a1_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b5a1_b5g5r5a1_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b5a1_b5g5r5a1_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b5a1_b5g5r5a1_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -49464,8 +49817,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM XeR5G5B5A1ToB5G5R5A1
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b6_b5g6r5_swizzle_rbga.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b6_b5g6r5_swizzle_rbga.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b6_b5g6r5_swizzle_rbga.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b6_b5g6r5_swizzle_rbga.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b6_b5g6r5_swizzle_rbga.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49479,8 +49833,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM XeR5G5B6ToB5G6R5WithRBGASwizzle
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b6_b5g6r5_swizzle_rbga_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b6_b5g6r5_swizzle_rbga_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b6_b5g6r5_swizzle_rbga_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b6_b5g6r5_swizzle_rbga_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g5b6_b5g6r5_swizzle_rbga_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -49495,8 +49850,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM XeR5G5B6ToB5G6R5WithRBGASwizzle
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g6b5_b5g6r5.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r5g6b5_b5g6r5.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g6b5_b5g6r5.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r5g6b5_b5g6r5.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g6b5_b5g6r5.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49510,8 +49866,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM XeR5G6B5ToB5G6R5
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g6b5_b5g6r5_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_r5g6b5_b5g6r5_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g6b5_b5g6r5_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_r5g6b5_b5g6r5_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_r5g6b5_b5g6r5_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -49526,8 +49883,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_16BPB_TRANSFORM XeR5G6B5ToB5G6R5
 +#include "texture_load_16bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_snorm_float.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_snorm_float.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_snorm_float.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_snorm_float.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_snorm_float.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49541,8 +49899,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TRANSFORM XeRG16SNormToRG16Float
 +#include "texture_load_32bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_snorm_float_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_snorm_float_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_snorm_float_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_snorm_float_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_snorm_float_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -49557,8 +49916,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TRANSFORM XeRG16SNormToRG16Float
 +#include "texture_load_32bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_unorm_float.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_unorm_float.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_unorm_float.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_unorm_float.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_unorm_float.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49572,8 +49932,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TRANSFORM XeRG16UNormToRG16Float
 +#include "texture_load_32bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_unorm_float_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_unorm_float_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_unorm_float_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_unorm_float_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rg16_unorm_float_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -49588,8 +49949,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_32BPB_TRANSFORM XeRG16UNormToRG16Float
 +#include "texture_load_32bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_snorm_float.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_snorm_float.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_snorm_float.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_snorm_float.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_snorm_float.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49603,8 +49965,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_64BPB_TRANSFORM XeRG16SNormToRG16Float
 +#include "texture_load_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_snorm_float_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_snorm_float_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_snorm_float_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_snorm_float_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_snorm_float_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -49619,8 +49982,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_64BPB_TRANSFORM XeRG16SNormToRG16Float
 +#include "texture_load_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_unorm_float.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_unorm_float.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_unorm_float.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_unorm_float.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_unorm_float.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,12 @@
 +/**
 + ******************************************************************************
@@ -49634,8 +49998,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_64BPB_TRANSFORM XeRG16UNormToRG16Float
 +#include "texture_load_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_unorm_float_scaled.cs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_unorm_float_scaled.cs.xesl b/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_unorm_float_scaled.cs.xesl
+--- a/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_unorm_float_scaled.cs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/gpu/shaders/texture_load_rgba16_unorm_float_scaled.cs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,13 @@
 +/**
 + ******************************************************************************
@@ -49650,8 +50015,9 @@
 +#include "pixel_formats.xesli"
 +#define XE_TEXTURE_LOAD_64BPB_TRANSFORM XeRG16UNormToRG16Float
 +#include "texture_load_64bpb.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/provenance.json
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/provenance.json b/src/metal_runtime_sources/provenance.json
+--- a/src/metal_runtime_sources/provenance.json	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/provenance.json	2026-10-31 07:26:27
 @@ -0,0 +1,678 @@
 +{
 +  "reference_revision": "8fecf0df53d978b9eafb021570d2a7e6c6ddd385",
@@ -50331,8 +50697,9 @@
 +  },
 +  "note": "Read-only reference. Source snapshots and BSD notices are retained; SPIRV-Cross fallback is not supported by this ReXGlue port. Metal Shader Converter is required."
 +}
---- /dev/null
-+++ b/src/metal_runtime_sources/ui/shaders/dither_8bpc.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/ui/shaders/dither_8bpc.xesli b/src/metal_runtime_sources/ui/shaders/dither_8bpc.xesli
+--- a/src/metal_runtime_sources/ui/shaders/dither_8bpc.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/ui/shaders/dither_8bpc.xesli	2026-10-31 07:26:27
 @@ -0,0 +1,43 @@
 +/**
 + ******************************************************************************
@@ -50377,8 +50744,9 @@
 +}
 +
 +#endif  // XENIA_UI_SHADERS_DITHER_8BPC_XESLI_
---- /dev/null
-+++ b/src/metal_runtime_sources/ui/shaders/guest_output_bilinear.ps.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/ui/shaders/guest_output_bilinear.ps.xesl b/src/metal_runtime_sources/ui/shaders/guest_output_bilinear.ps.xesl
+--- a/src/metal_runtime_sources/ui/shaders/guest_output_bilinear.ps.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/ui/shaders/guest_output_bilinear.ps.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,10 @@
 +/**
 + ******************************************************************************
@@ -50390,8 +50758,9 @@
 + */
 +
 +#include "guest_output_bilinear.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/ui/shaders/guest_output_bilinear.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/ui/shaders/guest_output_bilinear.xesli b/src/metal_runtime_sources/ui/shaders/guest_output_bilinear.xesli
+--- a/src/metal_runtime_sources/ui/shaders/guest_output_bilinear.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/ui/shaders/guest_output_bilinear.xesli	2026-10-31 07:26:27
 @@ -0,0 +1,63 @@
 +/**
 + ******************************************************************************
@@ -50456,8 +50825,9 @@
 +  out_xe(xe_bilinear_color) = bilinear_color;
 +}
 +entry_code_end_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/ui/shaders/guest_output_bilinear_dither.ps.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/ui/shaders/guest_output_bilinear_dither.ps.xesl b/src/metal_runtime_sources/ui/shaders/guest_output_bilinear_dither.ps.xesl
+--- a/src/metal_runtime_sources/ui/shaders/guest_output_bilinear_dither.ps.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/ui/shaders/guest_output_bilinear_dither.ps.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,11 @@
 +/**
 + ******************************************************************************
@@ -50470,8 +50840,9 @@
 +
 +#define XE_GUEST_OUTPUT_DITHER 1
 +#include "guest_output_bilinear.xesli"
---- /dev/null
-+++ b/src/metal_runtime_sources/ui/shaders/guest_output_triangle_strip_rect.vs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/ui/shaders/guest_output_triangle_strip_rect.vs.xesl b/src/metal_runtime_sources/ui/shaders/guest_output_triangle_strip_rect.vs.xesl
+--- a/src/metal_runtime_sources/ui/shaders/guest_output_triangle_strip_rect.vs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/ui/shaders/guest_output_triangle_strip_rect.vs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,37 @@
 +/**
 + ******************************************************************************
@@ -50510,8 +50881,9 @@
 +          0.0f, 1.0f);
 +}
 +entry_code_end_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/ui/shaders/immediate.ps.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/ui/shaders/immediate.ps.xesl b/src/metal_runtime_sources/ui/shaders/immediate.ps.xesl
+--- a/src/metal_runtime_sources/ui/shaders/immediate.ps.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/ui/shaders/immediate.ps.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,28 @@
 +/**
 + ******************************************************************************
@@ -50541,8 +50913,9 @@
 +      sample_comb_lod_2d_xe(xe_immediate_texture, in_xe(xe_in_texcoord), 0.0f);
 +}
 +entry_code_end_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/ui/shaders/immediate.vs.xesl
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/ui/shaders/immediate.vs.xesl b/src/metal_runtime_sources/ui/shaders/immediate.vs.xesl
+--- a/src/metal_runtime_sources/ui/shaders/immediate.vs.xesl	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/ui/shaders/immediate.vs.xesl	2026-10-31 07:26:27
 @@ -0,0 +1,39 @@
 +/**
 + ******************************************************************************
@@ -50583,8 +50956,9 @@
 +                0.0f, 1.0f);
 +}
 +entry_code_end_xe
---- /dev/null
-+++ b/src/metal_runtime_sources/ui/shaders/noise.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/ui/shaders/noise.xesli b/src/metal_runtime_sources/ui/shaders/noise.xesli
+--- a/src/metal_runtime_sources/ui/shaders/noise.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/ui/shaders/noise.xesli	2026-10-31 07:26:27
 @@ -0,0 +1,56 @@
 +/**
 + ******************************************************************************
@@ -50642,8 +51016,9 @@
 +               239, 66, 181, 248, 158)
 +
 +#endif  // XENIA_UI_SHADERS_NOISE_XESLI_
---- /dev/null
-+++ b/src/metal_runtime_sources/ui/shaders/xesl.xesli
+diff -Naur -x .* -x build -x thirdparty -x out a/src/metal_runtime_sources/ui/shaders/xesl.xesli b/src/metal_runtime_sources/ui/shaders/xesl.xesli
+--- a/src/metal_runtime_sources/ui/shaders/xesl.xesli	1969-12-31 19:00:00
++++ b/src/metal_runtime_sources/ui/shaders/xesl.xesli	2026-10-31 07:26:27
 @@ -0,0 +1,1258 @@
 +/**
 + ******************************************************************************
@@ -51903,8 +52278,9 @@
 +#endif  // SHADING_LANGUAGE_*_XE
 +
 +#endif  // XENIA_UI_SHADERS_XESL_XESLI_
---- a/src/ui/imgui_drawer.cpp
-+++ b/src/ui/imgui_drawer.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/ui/imgui_drawer.cpp b/src/ui/imgui_drawer.cpp
+--- a/src/ui/imgui_drawer.cpp	2026-08-21 18:10:13
++++ b/src/ui/imgui_drawer.cpp	2026-10-31 07:26:27
 @@ -9,6 +9,7 @@
   * @modified    Tom Clay, 2026 - Adapted for ReXGlue runtime
   */
@@ -51923,8 +52299,9 @@
      // Repaint (and handle input) continuously if still active. In detached mode
      // there is no presenter; the app drives repaint via its own present loop.
      if (presenter_) {
---- /dev/null
-+++ b/src/ui/metal/CMakeLists.txt
+diff -Naur -x .* -x build -x thirdparty -x out a/src/ui/metal/CMakeLists.txt b/src/ui/metal/CMakeLists.txt
+--- a/src/ui/metal/CMakeLists.txt	1969-12-31 19:00:00
++++ b/src/ui/metal/CMakeLists.txt	2026-10-31 07:26:27
 @@ -0,0 +1,17 @@
 +# Offscreen provider and ordered submission tracking; not a guest renderer yet.
 +if(NOT EXISTS "${REXGLUE_METAL_DEPS_ROOT}/metal-cpp/include/Metal/Metal.hpp")
@@ -51943,8 +52320,9 @@
 +target_link_libraries(rexmetal-memory PUBLIC rexmetal-native)
 +add_executable(rex-metal-memory-check ../../graphics/metal/shared_memory_check.cpp)
 +target_link_libraries(rex-metal-memory-check PRIVATE rexmetal-memory)
---- /dev/null
-+++ b/src/ui/metal/api.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/ui/metal/api.cpp b/src/ui/metal/api.cpp
+--- a/src/ui/metal/api.cpp	1969-12-31 19:00:00
++++ b/src/ui/metal/api.cpp	2026-10-31 07:26:27
 @@ -0,0 +1,19 @@
 +/**
 + ******************************************************************************
@@ -51965,8 +52343,9 @@
 +#include "Foundation/Foundation.hpp"
 +#include "Metal/Metal.hpp"
 +#include "QuartzCore/QuartzCore.hpp"
---- /dev/null
-+++ b/src/ui/metal/provider.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/ui/metal/provider.cpp b/src/ui/metal/provider.cpp
+--- a/src/ui/metal/provider.cpp	1969-12-31 19:00:00
++++ b/src/ui/metal/provider.cpp	2026-10-31 07:26:27
 @@ -0,0 +1,54 @@
 +/**
 + * Adapted from Xenia-Alloy's metal_provider.cc.
@@ -52022,8 +52401,9 @@
 +  return nullptr;
 +}
 +}  // namespace rex::ui::metal
---- /dev/null
-+++ b/src/ui/metal/submission_tracker.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/ui/metal/submission_tracker.cpp b/src/ui/metal/submission_tracker.cpp
+--- a/src/ui/metal/submission_tracker.cpp	1969-12-31 19:00:00
++++ b/src/ui/metal/submission_tracker.cpp	2026-10-31 07:26:27
 @@ -0,0 +1,82 @@
 +/**
 + * Adapted from Xenia-Alloy's metal_gpu_completion_timeline.cc.
@@ -52107,8 +52487,9 @@
 +  return completed_ >= submission && (!first_failed_ || submission < first_failed_);
 +}
 +}  // namespace rex::ui::metal
---- /dev/null
-+++ b/src/ui/metal_runtime/embed_shader_sources.py
+diff -Naur -x .* -x build -x thirdparty -x out a/src/ui/metal_runtime/embed_shader_sources.py b/src/ui/metal_runtime/embed_shader_sources.py
+--- a/src/ui/metal_runtime/embed_shader_sources.py	1969-12-31 19:00:00
++++ b/src/ui/metal_runtime/embed_shader_sources.py	2026-10-31 07:26:27
 @@ -0,0 +1,60 @@
 +#!/usr/bin/env python3
 +"""Embed current XeSL/MSL sources for compilation by the installed Metal driver.
@@ -52170,8 +52551,9 @@
 +
 +if __name__ == '__main__':
 +    main()
---- /dev/null
-+++ b/src/ui/metal_runtime/metal_api.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/ui/metal_runtime/metal_api.cpp b/src/ui/metal_runtime/metal_api.cpp
+--- a/src/ui/metal_runtime/metal_api.cpp	1969-12-31 19:00:00
++++ b/src/ui/metal_runtime/metal_api.cpp	2026-10-31 07:26:27
 @@ -0,0 +1,19 @@
 +/**
 + ******************************************************************************
@@ -52192,8 +52574,9 @@
 +#include <Foundation/Foundation.hpp>
 +#include <Metal/Metal.hpp>
 +#include <QuartzCore/QuartzCore.hpp>
---- /dev/null
-+++ b/src/ui/metal_runtime/metal_gpu_completion_timeline.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/ui/metal_runtime/metal_gpu_completion_timeline.cpp b/src/ui/metal_runtime/metal_gpu_completion_timeline.cpp
+--- a/src/ui/metal_runtime/metal_gpu_completion_timeline.cpp	1969-12-31 19:00:00
++++ b/src/ui/metal_runtime/metal_gpu_completion_timeline.cpp	2026-10-31 07:26:27
 @@ -0,0 +1,119 @@
 +/**
 + ******************************************************************************
@@ -52314,8 +52697,9 @@
 +}  // namespace metal
 +}  // namespace ui
 +}  // namespace xe
---- /dev/null
-+++ b/src/ui/metal_runtime/metal_immediate_drawer.mm
+diff -Naur -x .* -x build -x thirdparty -x out a/src/ui/metal_runtime/metal_immediate_drawer.mm b/src/ui/metal_runtime/metal_immediate_drawer.mm
+--- a/src/ui/metal_runtime/metal_immediate_drawer.mm	1969-12-31 19:00:00
++++ b/src/ui/metal_runtime/metal_immediate_drawer.mm	2026-10-31 07:26:27
 @@ -0,0 +1,448 @@
 +/**
 + ******************************************************************************
@@ -52765,8 +53149,9 @@
 +}  // namespace metal
 +}  // namespace ui
 +}  // namespace xe
---- /dev/null
-+++ b/src/ui/metal_runtime/metal_presenter.mm
+diff -Naur -x .* -x build -x thirdparty -x out a/src/ui/metal_runtime/metal_presenter.mm b/src/ui/metal_runtime/metal_presenter.mm
+--- a/src/ui/metal_runtime/metal_presenter.mm	1969-12-31 19:00:00
++++ b/src/ui/metal_runtime/metal_presenter.mm	2026-10-31 07:26:27
 @@ -0,0 +1,2166 @@
 +/**
 + ******************************************************************************
@@ -54934,8 +55319,9 @@
 +}  // namespace metal
 +}  // namespace ui
 +}  // namespace xe
---- /dev/null
-+++ b/src/ui/metal_runtime/metal_provider.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/ui/metal_runtime/metal_provider.cpp b/src/ui/metal_runtime/metal_provider.cpp
+--- a/src/ui/metal_runtime/metal_provider.cpp	1969-12-31 19:00:00
++++ b/src/ui/metal_runtime/metal_provider.cpp	2026-10-31 07:26:27
 @@ -0,0 +1,100 @@
 +/**
 + ******************************************************************************
@@ -55037,8 +55423,9 @@
 +}  // namespace metal
 +}  // namespace ui
 +}  // namespace xe
---- /dev/null
-+++ b/src/ui/metal_runtime/metal_util.cpp
+diff -Naur -x .* -x build -x thirdparty -x out a/src/ui/metal_runtime/metal_util.cpp b/src/ui/metal_runtime/metal_util.cpp
+--- a/src/ui/metal_runtime/metal_util.cpp	1969-12-31 19:00:00
++++ b/src/ui/metal_runtime/metal_util.cpp	2026-10-31 07:26:27
 @@ -0,0 +1,30 @@
 +/**
 + ******************************************************************************
@@ -55070,20 +55457,13 @@
 +  return device->newLibrary(source, nullptr, error);
 +}
 +}  // namespace rex::ui::metal_runtime::util
---- a/src/ui/vulkan/vulkan_presenter.cpp
-+++ b/src/ui/vulkan/vulkan_presenter.cpp
-@@ -653,6 +653,198 @@
-   uint32_t* image_out_pixels = reinterpret_cast<uint32_t*>(image_out.data.data());
-   for (size_t i = 0; i < pixel_count; ++i) {
-     image_out_pixels[i] = Packed10bpcRGBTo8bpcBytes(reinterpret_cast<const uint32_t*>(mapping)[i]);
-+  }
-+
-+  // Unmapping will be done by freeing.
-+  dfn.vkFreeMemory(device, buffer_memory, nullptr);
-+
-+  return true;
-+}
-+
+diff -Naur -x .* -x build -x thirdparty -x out a/src/ui/vulkan/vulkan_presenter.cpp b/src/ui/vulkan/vulkan_presenter.cpp
+--- a/src/ui/vulkan/vulkan_presenter.cpp	2026-08-21 18:10:13
++++ b/src/ui/vulkan/vulkan_presenter.cpp	2026-10-31 07:26:27
+@@ -661,6 +661,198 @@
+   return true;
+ }
+ 
 +bool VulkanPresenter::CaptureDiagnosticTexture(VkImage source_image, uint32_t width, uint32_t height, RawImage& image_out) {
 +  VkExtent2D image_extent{width,height};
 +  size_t pixel_count = size_t(image_extent.width) * image_extent.height;
@@ -55268,49 +55648,14 @@
 +  uint32_t* image_out_pixels = reinterpret_cast<uint32_t*>(image_out.data.data());
 +  for (size_t i = 0; i < pixel_count; ++i) {
 +    image_out_pixels[i] = reinterpret_cast<const uint32_t*>(mapping)[i];
-   }
- 
-   // Unmapping will be done by freeing.
---- a/thirdparty/CMakeLists.txt
-+++ b/thirdparty/CMakeLists.txt
-@@ -49,7 +49,7 @@
-         vulkan-headers vulkan-memory-allocator
-         spirv-headers spirv-tools glslang
-     )
--    if(APPLE)
-+    if(APPLE AND NOT BLUR_PUBLIC_SDK_PREFIX)
-         list(APPEND REQUIRED_SUBMODULES vulkan-loader moltenvk)
-     endif()
- endif()
-@@ -64,7 +64,8 @@
- endif()
- 
- foreach(submodule ${REQUIRED_SUBMODULES})
--    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${submodule}/.git")
-+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${submodule}/.git" AND
-+       NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${submodule}/.blurcompiled-source.json")
-         message(FATAL_ERROR
-             "Git submodule '${submodule}' is not initialized.\n"
-             "Please run: git submodule update --init --recursive\n"
-@@ -201,7 +202,20 @@
-     set(VMA_ENABLE_INSTALL ON CACHE BOOL "" FORCE)
-     add_subdirectory(vulkan-memory-allocator)
- 
--    if(APPLE)
-+    if(APPLE AND BLUR_PUBLIC_SDK_PREFIX)
-+        # Reuse only the verified public SDK Vulkan runtime dependencies.
-+        # The game runtime and Metal GPU plugin are compiled from source.
-+        foreach(pair "Vulkan::Loader|libvulkan.1.dylib" "MoltenVK::MoltenVK|libMoltenVK.dylib")
-+            string(REPLACE "|" ";" fields "${pair}")
-+            list(GET fields 0 name)
-+            list(GET fields 1 file)
-+            if(NOT EXISTS "${BLUR_PUBLIC_SDK_PREFIX}/lib/${file}")
-+                message(FATAL_ERROR "Missing pinned public SDK dependency: ${file}")
-+            endif()
-+            add_library(${name} SHARED IMPORTED GLOBAL)
-+            set_target_properties(${name} PROPERTIES IMPORTED_LOCATION "${BLUR_PUBLIC_SDK_PREFIX}/lib/${file}")
-+        endforeach()
-+    elseif(APPLE)
-         # Build the loader and MoltenVK revisions shipped by the pinned SDK.
-         # They remain runtime-loaded; no Vulkan implementation is linked into
-         # rexglue itself.
++  }
++
++  // Unmapping will be done by freeing.
++  dfn.vkFreeMemory(device, buffer_memory, nullptr);
++
++  return true;
++}
++
+ VkCommandBuffer VulkanPresenter::AcquireUISetupCommandBufferFromUIThread() {
+   if (paint_context_.ui_setup_command_buffer_current_index != SIZE_MAX) {
+     return paint_context_
